@@ -35,6 +35,23 @@ Task 1.1 (manual research) is user-owned and still open. Slice 2a done; 2b-4 not
 - `shot_map`/`zone_map` keep the empty-state "Sin datos" centred on the pitch (data coordinates) instead of axes coordinates, so the frame reads as an empty pitch.
 - One test assertion was corrected during apply: a venue with zero matches reports `matches = 0` and NaN only for the per-match averages (the spec's "no data, not zero" applies to averages); the initial test expected the whole row to be NaN.
 
+## Slice 3 (tasks 3.1-3.11): code done, 3.9-3.10 pending (user checks)
+
+- [x] 3.1-3.4 `src/rivalkit/report.py`: constants, `_wrap`, `_block` flow cursor, `_data_box` (grey, rule separator), `summary_lines` (warning first when N < 5, singular "1 partido"), `data_facts`, 8 page builders in spec order, overflow stderr warning, `write_report` atomic (`PdfPages` on `.tmp`, `rc_context({"pdf.fonttype": 42})`, `os.replace`)
+- [x] 3.5 `src/rivalkit/__main__.py`: argparse, in-process glob, combined errors `N error(s); no PDF written` exit 1, `wrote OUTPUT (8 pages, N matches)`, small-sample stderr warning, write-failure message exit 1, usage exit 2
+- [x] 3.6 `tests/test_report.py` (7 tests: 8 A4 pages full/minimal notes, invalid CSV leaves output untouched, missing plan, usage exit 2, argument-order determinism, summary warning/singular, overflow warning exit 0)
+- [x] 3.7-3.8 `.venv\Scripts\python -m pytest tests`: `57 passed`; sample `rival-report.pdf` generated (gitignored)
+- [ ] 3.9 user visual check of the sample PDF
+- [ ] 3.10 user manual Spanish verify of the sample PDF
+- [x] 3.11 committed on `feat/rival-kit-3-report` as `feat(report): add 8-page PDF report and CLI`
+
+### Deviations (slice 3)
+
+- `set_piece_counts` (charts.py) now sorts categories deterministically (frequency, then key). Found by the argument-order determinism test: raw `value_counts` ties follow row order, and `events` row order follows CLI argument order because `load_matches` sorts matches but not events/lineup.
+- Page 4 ("Sin pelota y transiciones") layout was compacted after the example data triggered a real overflow warning during apply.
+- Match-plan instructions are wrapped at `WRAP_FULL` and numbered on their first line; the design only required "numbered instructions, as written".
+- `write_report` cleans up the `.tmp` file on any exception (not only on rendering failure) so a crash mid-render never leaves a partial PDF.
+
 ## Deviations (slice 2a)
 
 - Bench players 12-18 were given positions (DF/MF/FW) so every lineup row has one; the spec only requires the column to exist.
