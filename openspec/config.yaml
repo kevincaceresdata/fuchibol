@@ -1,0 +1,54 @@
+schema: spec-driven
+
+context: |
+  Project: fuchibol - Python kit producing weekly short PDF "rival reports" (opposition analysis)
+  for Argentine second-tier football clubs, from hand-tagged CSV event data taken from match video.
+  Portfolio piece for a data analyst seeking a football-analyst job.
+  Stack (PLANNED, not yet detected): Python 3, pandas, mplsoccer, pytest. Nothing installed/configured yet.
+  Architecture: none yet (greenfield). Testing: pytest planned. Style: none yet.
+
+strict_tdd: false   # source: no project/session config and no user choice
+
+projects:
+  - path: "."
+    stack: "Python 3 (planned; pandas, mplsoccer)"
+    test_command: "pytest (planned, not yet configured)"
+    coverage_command: null
+    linter: null
+    type_checker: null
+    formatter: null
+
+testing:
+  status: planned
+  runner: pytest (planned)
+  layers:
+    unit: planned
+    integration: none
+    e2e: none
+  coverage: none
+  quality_tools: none
+
+rules:
+  proposal:
+    - Include rollback plan for risky changes
+  specs:
+    - Use Given/When/Then for scenarios
+    - Use RFC 2119 keywords (MUST, SHALL, SHOULD, MAY)
+  design:
+    - Document architecture decisions with rationale
+  tasks:
+    - Group by phase, use hierarchical numbering
+    - Keep tasks completable in one session
+    - Forecast the 400 changed-line review budget (delivery strategy ask-on-risk)
+  apply:
+    guidelines:
+      - Follow existing code patterns
+      - Never run builds; do not install packages unless the task says so
+    tdd: false
+    test_command: ""
+  verify:
+    test_command: ""
+    build_command: ""
+    coverage_threshold: 0
+  archive:
+    - Warn before merging destructive deltas
