@@ -11,9 +11,18 @@
 - [x] 1.11 `.venv/Scripts/python -m pytest tests/test_schema.py`: `36 passed in 1.03s`
 - [x] 1.12 committed on `feat/rival-kit-1-schema`
 
-Task 1.1 (manual research) is user-owned and still open. Slices 2-4 not started.
+Task 1.1 (manual research) is user-owned and still open. Slice 2a done; 2b-4 not started.
 
-## Deviations
+## Slice 2a (tasks 2.1-2.3b): done
+
+- [x] 2.1 `scripts/make_example_data.py` (stdlib, `random.Random(2026)`, fixed goals/lineups, seeded rest; ~82 events per match)
+- [x] 2.2 `data/example/m01..m05/{match,events,lineup}.csv` generated
+- [x] 2.3 `data/example/notes.toml` (neutral Spanish, 7 observation keys, 3 key players from generated lineups) + `test_example_data_loads_and_covers` in `tests/test_schema.py`
+- [x] 2.3b `.venv/Scripts/python -m pytest tests/test_schema.py`: `37 passed`; committed on `feat/rival-kit-2-charts` as `feat(example): add seeded synthetic dataset and example notes`
+
+## Deviations (slice 2a)
+
+- Bench players 12-18 were given positions (DF/MF/FW) so every lineup row has one; the spec only requires the column to exist.
 
 - Notes: each `[[key_players]]` entry requires `note` (error if missing), following the design text "needs a non-empty name and a text note".
 - Notes: `summary` counts as present when identity, weaknesses or threats has any non-blank text (design: "all empty or blank" is missing).
