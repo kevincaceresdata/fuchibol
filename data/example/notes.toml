@@ -1,0 +1,32 @@
+# Notas del analista para el equipo de ejemplo "AtlActico Ejemplo".
+# Equipo ficticio del dataset sintetico; texto en espanol neutro de muestra.
+
+[summary]
+identity = "Equipo de 4-2-3-1 con salida corta desde el arquero y laterales que se suman al ataque. En fase ofensiva busca el carril interior del 10 y las diagonales de los extremos; sin pelota repliega a un 4-4-2 medio con presion alta solo tras perdida clara."
+weaknesses = ["Espacio a la espalda de los laterales cuando ambos suben al mismo tiempo.", "Salida presionada: el arquero tiende a lanzar largo cuando el rival presiona con dos delanteros.", "Bajo volumen de remate en el primer tiempo: la mayoria de los goles llega tras el minuto 60."]
+threats = ["Jugador 09 entre lineas: genera la mitad de las ocasiones de pelota parada cercanas al area.", "Transiciones rapidas por la banda derecha en los primeros 15 minutos de cada tiempo.", "Balones parados: cinco de los ocho goles de la muestra salieron de corner o tiro libre indirecto."]
+
+[plan]
+instructions = ["Presionar la salida con dos delanteros sobre el central mas lento y cortar la linea hacia el arquero.", "Atacar la espalda del lateral derecho rival con desmarques de los extremos en transicion.", "Bajar el ritmo tras el minuto 60: mantener posesion larga y forzar corners para explotar el volumen de pelota parada.", "Evitar faltas en el tercio final: el rival convierte balones parados con frecuencia."]
+clips = ["m01 41': gol de Jugador 09 tras rebote de corner, referencia de pelota parada.", "m04 38': penal cometido por la defensa en zona 14, referencia de falta evitable.", "m05 63': transicion por derecha con asistencia de Jugador 10, patron de ataque repetido."]
+
+[observations]
+identity_and_lineup = "Once tipo muy estable en la muestra: el mismo once inicial salvo un cambio por partido. El doble pivote 6-8 sostiene la salida y el 10 juega libre. Cuando el 9 sale del area, entra el 10 al espacio central."
+in_possession = "Salida corta con el arquero como primer lanzador. Progresion por carriles interiores mas que por bandas: los laterales llegan al area solo cuando el extremo fija afuera. Volumen de remate bajo pero con buena ubicacion (zonas 16-17)."
+out_of_possession = "Repliegue a 4-4-2 con lineas medias-bajas. Presion alta solo en salidas rivales claras o en el inicio de cada tiempo. Los extremos no bajan con continuidad: la banda derecha defensiva queda expuesta."
+set_pieces = "Corners cortos hacia el punto penal y centros cerrados al primer palo. En defensa, zonal con dos hombres en el primer palo y salida rapida al contragolpe."
+key_players = "Jugador 09: referencia ofensiva, aparece en todos los goles de la muestra. Jugador 05: lateral izquierdo con llegada, suma volumen de ataque pero deja espacios. Jugador 01: arquero con buena salida corta y juego de pies."
+match_plan = "Mantener el bloque medio, negar la zona 14 al 10 rival y atacar la espalda del lateral derecho en transicion. Buscar corners: la muestra muestra rendimiento superior en pelota parada."
+sources = "Cinco partidos de la Primera Nacional Ejemplo etiquetados a mano desde video por un solo analista. Sin datos de eventos publicos; sin xG ni metricas avanzadas."
+
+[[key_players]]
+name = "Jugador 09"
+note = "Delantero centro con movimiento entre lineas. Define dentro del area (zonas 16-17) y genera faltas cercanas; la defensa rival debe evitar los contactos tardios."
+
+[[key_players]]
+name = "Jugador 05"
+note = "Lateral izquierdo ofensivo: suma al ataque en fase de posesion larga y deja la espalda expuesta en transicion. Conviene atacar su lado con extremo rapido."
+
+[[key_players]]
+name = "Jugador 01"
+note = "Arquero con salida corta prolija bajo presion baja; bajo presion alta tiende al pelotazo largo. Forzar esa decision con dos delanteros."
