@@ -77,6 +77,10 @@ const minuteEl = document.getElementById("minute");
 const eventsEl = document.getElementById("events");
 let draft = null;          // {type, team, zone, detail}
 let events = [];           // {minute, ts, type, team, zone, detail}
+try {
+  const saved = localStorage.getItem("rivalkit_tagger_events");
+  if (saved) events = JSON.parse(saved) || [];
+} catch (e) {}
 
 document.getElementById("file").addEventListener("change", e => {
   if (e.target.files[0]) video.src = URL.createObjectURL(e.target.files[0]);
@@ -101,6 +105,7 @@ function setStatus(msg) {
 }
 
 function render() {
+  try { localStorage.setItem("rivalkit_tagger_events", JSON.stringify(events)); } catch (e) {}
   document.getElementById("count").textContent = events.length;
   eventsEl.innerHTML = events.slice(-12).map(ev =>
     "<div>" + ev.minute + "' " + ev.type + " " + ev.team + " z" + ev.zone +
@@ -200,6 +205,10 @@ document.getElementById("export").addEventListener("click", () => {
   a.click();
 });
 video.addEventListener("timeupdate", clockhint);
+if (events.length > 0) {
+  status.textContent = "Sesión recuperada: " + events.length + " eventos guardados. Seguí o descargá el JSON.";
+  render();
+}
 setStatus();
 </script>
 </body>
