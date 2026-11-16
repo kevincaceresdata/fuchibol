@@ -2,7 +2,8 @@ from pathlib import Path
 
 import pytest
 
-from rivalkit.schema import ValidationError, load_matches, load_notes, zone_rect
+from rivalkit.schema import (EVENT_TYPES, GAME_STATES, ValidationError,
+                             load_matches, load_notes, zone_rect)
 
 MATCH = ("match_id,date,rival_team,opponent,venue,rival_goals,opponent_goals,competition\n"
          "m01,2026-03-01,Atletico Ejemplo,Club Muestra,home,1,0,Liga\n")
@@ -171,3 +172,16 @@ def test_zone_geometry():
     assert (x0, round(y0, 2), round(w, 2), round(h, 2)) == (0, 66.67, 16.67, 33.33)
     x0, y0, _, _ = zone_rect(17)
     assert round(x0, 2) == 83.33 and round(y0, 2) == 33.33
+
+
+# --- example data --------------------------------------------------------------------
+
+def test_example_data_loads_and_covers():
+    folders = sorted(p for p in Path("data/example").iterdir() if p.is_dir())
+    data = load_matches(folders)
+    load_notes(Path("data/example/notes.toml"))
+    assert len(data.matches) >= 5
+    assert set(data.events["event_type"]) == set(EVENT_TYPES)
+    assert set(data.events["game_state"]) == set(GAME_STATES)
+    assert set(data.matches["venue"]) == {"home", "away"}
+    assert data.lineup.loc[~data.lineup["starter"], "minute_in"].notna().any()
