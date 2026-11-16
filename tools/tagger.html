@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>rivalkit tagger</title>
+<style>
+  body { font-family: system-ui, sans-serif; background: #1b1e24; color: #e8e8e8; margin: 0; display: flex; flex-wrap: wrap; }
+  #left { flex: 1 1 720px; padding: 10px; }
+  #right { flex: 1 1 380px; padding: 10px; }
+  video { width: 100%; background: #000; }
+  #status { font-size: 24px; font-weight: 700; padding: 10px; background: #263041; border-radius: 8px; margin: 8px 0; min-height: 34px; }
+  .row { margin: 6px 0; }
+  button { font-size: 15px; padding: 8px 10px; margin: 2px; border: 1px solid #444; border-radius: 6px; background: #2e3850; color: #fff; cursor: pointer; }
+  button:hover { background: #40507a; }
+  .zonegrid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 3px; margin: 4px 0; }
+  .zonegrid button { padding: 10px 0; font-size: 14px; }
+  #events { font-family: monospace; font-size: 12px; max-height: 220px; overflow-y: auto; background: #14171c; padding: 6px; border-radius: 6px; }
+  #events div { padding: 1px 0; }
+  input[type=number] { font-size: 15px; padding: 6px; width: 90px; background: #0f1216; color: #fff; border: 1px solid #444; border-radius: 6px; }
+  .hint { color: #9aa4b2; font-size: 13px; }
+  h3 { margin: 10px 0 4px; font-size: 14px; color: #9fb7dd; text-transform: uppercase; }
+</style>
+</head>
+<body>
+<div id="left">
+  <div class="row"><input type="file" id="file" accept="video/*"> <span class="hint">cargá el mp4 del partido</span></div>
+  <video id="video" controls></video>
+  <div class="row hint">
+    Espacio play/pausa · &#8592;&#8594; ±5s · , . frame a frame (1/30s) · [ ] velocidad · Ctrl+Z deshacer
+  </div>
+</div>
+<div id="right">
+  <div id="status">Cargá un video para empezar</div>
+
+  <h3>1. Tipo</h3>
+  <div class="row" id="types">
+    <button data-k="s">S · remate</button><button data-k="g">G · gol</button><button data-k="c">C · corner</button>
+    <button data-k="f">F · tiro libre</button><button data-k="p">P · penal</button><button data-k="r">R · recupero</button>
+  </div>
+
+  <h3>2. Equipo</h3>
+  <div class="row" id="teams">
+    <button data-k="r">R · rival (equipo del informe)</button><button data-k="o">O · oponente</button>
+  </div>
+
+  <h3>3. Zona — dos dígitos (01-18) o clic en la grilla</h3>
+  <div class="zonegrid" id="zones"></div>
+
+  <h3>4. Detalle (opcional · Enter para saltar)</h3>
+  <div class="row" id="details"></div>
+
+  <h3>5. Minuto del reloj del partido + Enter</h3>
+  <div class="row">
+    <input type="number" id="minute" min="0" max="130" placeholder="ej 23">
+    <button id="skipdetail">sin detalle</button>
+  </div>
+  <div class="row hint" id="clockhint"></div>
+
+  <h3>Eventos (<span id="count">0</span>) <button id="undo">deshacer</button> <button id="clear">limpiar</button></h3>
+  <div id="events"></div>
+  <div class="row" style="margin-top:8px">
+    <button id="export" style="font-size:17px; background:#2f7d4f">Descargar events_raw.json</button>
+  </div>
+  <div class="row hint">despu&eacute;s: .venv\Scripts\python scripts\tagger_export.py events_raw.json &gt; events.csv</div>
+</div>
+<script>
+const TYPES = {s:"shot", g:"goal", c:"corner", f:"free_kick", p:"penalty", r:"recovery"};
+const DETAILS = {
+  goal: {1:"open_play", 2:"set_piece", 9:"penalty", 0:"own_goal"},
+  shot: {1:"on_target", 2:"off_target", 3:"blocked"},
+  corner: {1:"direct", 2:"crossed", 3:"short"},
+  free_kick: {1:"direct", 2:"crossed", 3:"short"}
+};
+const video = document.getElementById("video");
+const status = document.getElementById("status");
+const minuteEl = document.getElementById("minute");
+const eventsEl = document.getElementById("events");
+let draft = null;          // {type, team, zone, detail}
+let events = [];           // {minute, ts, type, team, zone, detail}
+
+document.getElementById("file").addEventListener("change", e => {
+  if (e.target.files[0]) video.src = URL.createObjectURL(e.target.files[0]);
+});
+
+const zonesEl = document.getElementById("zones");
+for (let band = 0; band < 6; band++) for (let lane = 0; lane < 3; lane++) {
+  const z = band * 3 + lane + 1;
+  const b = document.createElement("button");
+  b.textContent = (z < 10 ? "0" : "") + z; b.dataset.k = z;
+  b.title = "banda " + (band + 1) + " carril " + (lane + 1);
+  zonesEl.appendChild(b);
+}
+
+function setStatus(msg) {
+  if (!draft) { status.textContent = msg || "Listo · tipo (S/G/C/F/P/R)"; return; }
+  const parts = [draft.type.toUpperCase()];
+  if (draft.team) parts.push(draft.team === "rival" ? "RIVAL" : "OPONENTE");
+  if (draft.zone) parts.push("zona " + draft.zone);
+  if (draft.detail) parts.push(draft.detail);
+  status.textContent = parts.join(" · ") + (msg ? "  →  " + msg : "");
+}
+
+function render() {
+  document.getElementById("count").textContent = events.length;
+  eventsEl.innerHTML = events.slice(-12).map(ev =>
+    "<div>" + ev.minute + "' " + ev.type + " " + ev.team + " z" + ev.zone +
+    (ev.detail ? " " + ev.detail : "") +
+    ' <span style="color:#667">ts ' + ev.ts.toFixed(1) + "s</span></div>"
+  ).join("");
+}
+
+function reset(msg) { draft = null; render(); setStatus(msg); }
+
+function confirmEvent() {
+  const m = parseInt(minuteEl.value, 10);
+  if (Number.isNaN(m) || m < 0 || m > 130) { status.textContent = "Falta el minuto del reloj del partido"; return; }
+  if (!draft || !draft.type || !draft.team || !draft.zone) { reset("Evento incompleto, empezá de nuevo"); return; }
+  events.push({minute: m, ts: video.currentTime, type: draft.type, team: draft.team, zone: draft.zone, detail: draft.detail || ""});
+  const saved = m + "' " + draft.type + " " + draft.team + " z" + draft.zone;
+  minuteEl.value = ""; minuteEl.blur();
+  draft = null; render();
+  status.textContent = "Guardado: " + saved + "  →  tipo (S/G/C/F/P/R)";
+}
+
+function handleKey(k) {
+  if (!draft) {
+    if (TYPES[k]) { draft = {type: TYPES[k]}; showDetailButtons(draft.type); setStatus("equipo (R/O)"); }
+    return;
+  }
+  if (!draft.team) {
+    if (k === "r") draft.team = "rival";
+    else if (k === "o") draft.team = "opponent";
+    else return;
+    setStatus("zona, dos dígitos 01-18");
+    return;
+  }
+  if (!draft.zone) {
+    const d = parseInt(k, 10);
+    if (isNaN(d)) return;
+    if (draft.zbuf === undefined) {
+      if (d >= 1 && d <= 9) { draft.zbuf = d; status.textContent = draft.type.toUpperCase() + " · " + (draft.team === "rival" ? "RIVAL" : "OPONENTE") + " · zona " + d + "... (2º dígito)"; }
+      return;
+    }
+    const zone = draft.zbuf * 10 + d;
+    if (zone >= 1 && zone <= 18) { draft.zone = zone; delete draft.zbuf; setStatus(nextStepHint()); }
+    else { delete draft.zbuf; status.textContent = "Zona inválida (01-18), de nuevo"; }
+    return;
+  }
+  const dm = DETAILS[draft.type] || {};
+  if (dm[k] !== undefined) { draft.detail = dm[k]; setStatus("minuto + Enter"); minuteEl.focus(); }
+}
+
+function nextStepHint() {
+  return (DETAILS[draft.type] && Object.keys(DETAILS[draft.type]).length) ? "detalle (opcional) o Enter para minuto" : "Enter para minuto";
+}
+
+function showDetailButtons(type) {
+  const dm = DETAILS[type] || {};
+  const el = document.getElementById("details");
+  el.innerHTML = "";
+  const names = {1:"direct", 2:"crossed/ot/sp", 3:"short/blocked", 0:"own_goal", 9:"penal", 7:"open_play", 8:"set_piece"};
+  for (const k of Object.keys(dm)) {
+    const b = document.createElement("button");
+    b.textContent = k + " · " + (names[k] || dm[k]);
+    b.addEventListener("click", () => { draft.detail = dm[k]; setStatus("minuto + Enter"); minuteEl.focus(); });
+    el.appendChild(b);
+  }
+}
+
+document.addEventListener("keydown", e => {
+  const typing = ["INPUT", "TEXTAREA"].includes(document.activeElement.tagName);
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z") { e.preventDefault(); events.pop(); reset("Último evento borrado"); return; }
+  if (typing) {
+    if (document.activeElement === minuteEl && e.key === "Enter") { e.preventDefault(); confirmEvent(); }
+    return;
+  }
+  if (e.key === " ") { e.preventDefault(); video.paused ? video.play() : video.pause(); return; }
+  if (e.key === "ArrowLeft") { e.preventDefault(); video.currentTime = Math.max(0, video.currentTime - 5); return; }
+  if (e.key === "ArrowRight") { e.preventDefault(); video.currentTime += 5; return; }
+  if (e.key === ",") { e.preventDefault(); video.currentTime = Math.max(0, video.currentTime - 1/30); return; }
+  if (e.key === ".") { e.preventDefault(); video.currentTime += 1/30; return; }
+  if (e.key === "[") { e.preventDefault(); video.playbackRate = Math.max(0.5, +(video.playbackRate - 0.25).toFixed(2)); clockhint(); return; }
+  if (e.key === "]") { e.preventDefault(); video.playbackRate = Math.min(2, +(video.playbackRate + 0.25).toFixed(2)); clockhint(); return; }
+  if (e.key === "Enter") { if (draft && draft.zone) { setStatus("minuto + Enter"); minuteEl.focus(); } else confirmEvent(); return; }
+  handleKey(e.key.toLowerCase());
+});
+function clockhint() { document.getElementById("clockhint").textContent = "velocidad " + video.playbackRate + "x · video en " + video.currentTime.toFixed(1) + "s"; }
+
+document.getElementById("types").addEventListener("click", e => { if (e.target.dataset.k) { draft = {type: TYPES[e.target.dataset.k]}; showDetailButtons(draft.type); setStatus("equipo (R/O)"); } });
+document.getElementById("teams").addEventListener("click", e => { if (e.target.dataset.k && draft) { draft.team = e.target.dataset.k === "r" ? "rival" : "opponent"; setStatus("zona, dos dígitos 01-18"); } });
+document.getElementById("zones").addEventListener("click", e => { if (e.target.dataset.k && draft && draft.team) { draft.zone = parseInt(e.target.dataset.k, 10); delete draft.zbuf; setStatus(nextStepHint()); } });
+document.getElementById("skipdetail").addEventListener("click", () => { if (draft) { delete draft.detail; setStatus("minuto + Enter"); minuteEl.focus(); } });
+document.getElementById("undo").addEventListener("click", () => { events.pop(); reset("Último evento borrado"); });
+document.getElementById("clear").addEventListener("click", () => { if (confirm("¿Borrar los " + events.length + " eventos?")) { events = []; reset("Todo limpio"); } });
+document.getElementById("export").addEventListener("click", () => {
+  const blob = new Blob([JSON.stringify({events}, null, 1)], {type: "application/json"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "events_raw.json";
+  a.click();
+});
+video.addEventListener("timeupdate", clockhint);
+setStatus();
+</script>
+</body>
+</html>

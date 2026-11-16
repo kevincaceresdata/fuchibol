@@ -48,7 +48,7 @@ CSV tiene errores, el comando lista todos los errores y **no escribe** el PDF.
 |---|---|
 | `python -m rivalkit <carpetas> --notes notas.toml -o salida.pdf` | Genera el informe |
 | `.venv\Scripts\python -m pytest` | Corre la suite completa (57 tests) |
-| `.venv\Scripts\python scripts/make_example_data.py` | Regenera el dataset de ejemplo de forma identica (semilla fija) |
+| `tools\tagger.html` + `scripts\tagger_export.py` | Etiquetado sobre video local: abri el HTML en el navegador, cargá el mp4, exportá `events_raw.json` y convertilo a `events.csv` con game_state calculado |
 
 Contrato de la CLI: exit 0 con el PDF escrito; exit 1 con todos los errores
 listados y el output intacto si la entrada es invalida; exit 2 por uso
