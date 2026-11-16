@@ -6,6 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "rivalkit"
 version = "0.1.0"
 description = "Rival report kit: hand-tagged match CSVs and analyst notes to an 8-page PDF"
+readme = "README.md"
 requires-python = ">=3.11"
 dependencies = ["pandas>=2.1", "matplotlib>=3.7", "mplsoccer>=1.2"]
 

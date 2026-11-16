@@ -96,12 +96,12 @@ Acceptance (spec scenarios): rival-report "Multiple folders", "No folders given"
 
 ## Slice 4 / Phase 5: Docs and outreach (~310 lines)
 
-- [ ] 4.1 Create `README.md`: overview, quick start (`pip install -e .[dev]`, the example command), commands, architecture paragraph (flat pipeline), notes usage, data policy (no real data or video committed, no scraping).
-- [ ] 4.2 Create `docs/tagging-guide.md`: zone grid diagram, column guide per file, conventions (goals once as `goal`, own goals, penalties, minute `mm+1`, stoppage, recoveries for both teams), Excel/Google Sheets tips (CSV UTF-8, `;` delimiter), tagging-time column, notes file format and the documented caps.
-- [ ] 4.3 Finalize `docs/data-sources.md` from task 1.1 findings if it has not landed already (read-only check that it names Sofascore, FotMob and the terms of service summary).
-- [ ] 4.4 Create `outreach/cover-message.md`, `outreach/one-page-summary.md`, `outreach/public-post.md`: Spanish, team-agnostic templates with `{{CLUB}}`, `{{RIVAL}}`, `{{FECHA}}` placeholders, pointing to the short PDF.
-- [ ] 4.5 Add the `readme = "README.md"` line to `pyproject.toml`.
-- [ ] 4.6 **USER**: run `pytest` (full suite) to confirm nothing regressed; skim the docs for accuracy against slices 1 to 3.
-- [ ] 4.7 Commit slice 4: `docs: add readme, tagging guide, data sources and outreach templates`.
+- [x] 4.1 Create `README.md`: overview, quick start (`pip install -e .[dev]`, the example command), commands, architecture paragraph (flat pipeline), notes usage, data policy (no real data or video committed, no scraping).
+- [x] 4.2 Create `docs/tagging-guide.md`: zone grid diagram, column guide per file, conventions (goals once as `goal`, own goals, penalties, minute `mm+1`, stoppage, recoveries for both teams), Excel/Google Sheets tips (CSV UTF-8, `;` delimiter), tagging-time column, notes file format and the documented caps.
+- [x] 4.3 Finalize `docs/data-sources.md` from task 1.1 findings if it has not landed already (read-only check that it names Sofascore, FotMob and the terms of service summary).
+- [x] 4.4 Create `outreach/cover-message.md`, `outreach/one-page-summary.md`, `outreach/public-post.md`: Spanish, team-agnostic templates with `{{CLUB}}`, `{{RIVAL}}`, `{{FECHA}}` placeholders, pointing to the short PDF.
+- [x] 4.5 Add the `readme = "README.md"` line to `pyproject.toml`.
+- [ ] 4.6 **USER**: run `pytest` (full suite) to confirm nothing regressed; skim the docs for accuracy against slices 1 to 3. (Suite runs green on the branch: 57 passed; user skim pending.)
+- [x] 4.7 Commit slice 4: `docs: add readme, tagging guide, data sources and outreach templates`.
 
 Acceptance: the docs describe the contracts fixed in slices 1 to 3; the spec requirement "Mandatory data-sources and limitations note" stays consistent with `docs/data-sources.md`; the full `pytest` suite passes.

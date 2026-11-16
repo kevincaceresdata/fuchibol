@@ -45,6 +45,21 @@ Task 1.1 (manual research) is user-owned and still open. Slice 2a done; 2b-4 not
 - [ ] 3.10 user manual Spanish verify of the sample PDF
 - [x] 3.11 committed on `feat/rival-kit-3-report` as `feat(report): add 8-page PDF report and CLI`
 
+## Slice 4 (tasks 4.1-4.7): done, 4.6 user skim pending
+
+- [x] 4.1 `README.md`: overview, quick start, commands, flat-pipeline architecture, notes usage, data policy
+- [x] 4.2 `docs/tagging-guide.md`: 18-zone grid, per-column rules, conventions (goals once, penalties, own goals, minute rules, recoveries both teams), Excel tips, tagging-time column, notes format and caps
+- [x] 4.3 `docs/data-sources.md`: 2026-11-13 verification — YouTube streams unusable for tagging (frame-inspected), LPF Play as official source, Sofascore/FotMob/ESPN/ScoreBat coverage table, FotMob xG implication; Sofascore/FotMob/ESPN ToS reading still pending (task 1.1, user-owned)
+- [x] 4.4 `outreach/cover-message.md`, `outreach/one-page-summary.md`, `outreach/public-post.md`: neutral Spanish, `{{...}}` placeholders, pointing to the short PDF
+- [x] 4.5 `readme = "README.md"` added to `pyproject.toml`
+- [ ] 4.6 user: full suite green on branch (57 passed); docs skim pending
+- [x] 4.7 committed on `feat/rival-kit-4-docs` as `docs: add readme, tagging guide, data sources and outreach templates`
+
+### Deviations (slice 4)
+
+- Docs written without diacritics where practical to avoid encoding pitfalls in editors, matching the existing ASCII-style copy convention of the data example notes.
+- `data-sources.md` records the 2026-11-13 verification (which superseded the 2026-10-31 link list) and flags the ToS reading as the remaining task-1.1 item.
+
 ### Deviations (slice 3)
 
 - `set_piece_counts` (charts.py) now sorts categories deterministically (frequency, then key). Found by the argument-order determinism test: raw `value_counts` ties follow row order, and `events` row order follows CLI argument order because `load_matches` sorts matches but not events/lineup.
