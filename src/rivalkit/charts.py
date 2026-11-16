@@ -83,7 +83,9 @@ def set_piece_counts(events: pd.DataFrame, team: str) -> pd.Series:
     pieces = select(events, team, ("corner", "free_kick", "penalty"))
     keys = ["penalty" if t == "penalty" else f"{t}/{d}"
             for t, d in zip(pieces["event_type"], pieces["detail"])]
-    return pd.Series(keys, dtype=object).value_counts()
+    counts = pd.Series(keys, dtype=object).value_counts()
+    # deterministic order: frequency first, then key, independent of row order
+    return counts.sort_index().sort_values(ascending=False, kind="mergesort")
 
 
 def pressing_proxy(data: Dataset) -> pd.Series:
