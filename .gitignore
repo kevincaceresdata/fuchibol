@@ -1,0 +1,16 @@
+# python
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+build/
+dist/
+*.egg-info/
+*.pt
+
+# generated reports
+*.pdf
+*.pdf.tmp
+
+# local real data (matches tagged by hand; never committed)
+data/real/

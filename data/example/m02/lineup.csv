@@ -1,0 +1,13 @@
+player,shirt_number,position,starter,minute_in,minute_out
+Jugador 01,1,MF,true,,
+Jugador 02,2,MF,true,,
+Jugador 03,3,MF,true,,
+Jugador 04,4,MF,true,,
+Jugador 05,5,MF,true,,
+Jugador 06,6,MF,true,,
+Jugador 07,7,MF,true,,
+Jugador 08,8,MF,true,,
+Jugador 09,9,MF,true,,
+Jugador 10,10,MF,true,,
+Jugador 11,11,MF,true,,
+Jugador 12,12,DF,false,60,
