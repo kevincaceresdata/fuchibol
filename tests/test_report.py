@@ -1,4 +1,4 @@
-"""Smoke tests: 8 A4 pages, no PDF on invalid input, sample warning, CLI contract."""
+"""Smoke tests: portada + 8 paginas A4, no PDF on invalid input, sample warning, CLI contract."""
 
 import re
 import shutil
@@ -36,14 +36,14 @@ def every_page_is_a4(path: Path) -> bool:
     return True
 
 
-def test_full_and_minimal_notes_produce_8_a4_pages(tmp_path, capsys):
+def test_full_and_minimal_notes_produce_9_a4_pages(tmp_path, capsys):
     minimal = tmp_path / "notes.toml"
     minimal.write_text(MINIMAL, encoding="utf-8")
     for notes in (str(NOTES), minimal):
         out = tmp_path / f"report-{Path(notes).stem}.pdf"
         assert main(args(out, notes=notes)) == 0
         assert out.is_file()
-        assert page_count(out) == 8
+        assert page_count(out) == 9
         assert every_page_is_a4(out)
     assert "wrote" in capsys.readouterr().out
 

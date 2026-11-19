@@ -26,21 +26,54 @@ LABELS = {
     "rival": "Rival", "opponent": "Oponente",
     "winning": "Ganando", "drawing": "Empatando", "losing": "Perdiendo",
     "home": "Local", "away": "Visitante",
-    "open_play": "Jugada abierta", "set_piece": "Pelota parada", "own_goal": "Autogol",
+    "open_play": "Jug. abierta", "set_piece": "Pel. parada", "own_goal": "Autogol",
     "on_target": "Al arco", "off_target": "Desviado", "blocked": "Bloqueado",
     "direct": "Directo", "crossed": "Centro", "short": "Corto",
     "player": "Jugador", "position": "Posición", "starts": "Titularidades",
     "minutes": "Minutos", "matches": "PJ", "goals_for": "Goles a favor/p",
     "goals_against": "Goles en contra/p", "shots": "Remates/p",
     "shots_against": "Remates recibidos/p",
-    "no_data": "Sin datos", "": "Sin especificar",
+    "no_data": "Sin datos", "": "S/ dato",
 }
 INTERVALS = ("0-15", "16-30", "31-45", "46-60", "61-75", "76-90", "91+")
 _INTERVAL_BINS = (0, 15, 30, 45, 60, 75, 90, np.inf)
 PRESSING_PROXY_DEFINITION = ("Indicador aproximado (proxy) de presión: recuperaciones "
                              "del rival en campo contrario (zonas 10-18), promedio por partido.")
 _ZONE_COUNT = ZONE_BANDS * ZONE_LANES
-_BAR_COLOR = "#4472a8"
+
+PALETTE = {
+    "ink": "#141C2B",      # texto principal (negro azulado)
+    "muted": "#5B6472",    # texto secundario
+    "brand": "#1B3C8C",    # azul Almagro
+    "brand_dark": "#0E1E4E",  # azul profundo (barras, bandas)
+    "brand_light": "#7C9BE0", # azul claro (acentos)
+    "opp": "#DF9A2E",      # ambar oponente
+    "accent": "#0E7C7B",   # teal de apoyo
+    "alert": "#A93A3A",    # alertas
+    "alert_bg": "#FBECEC",
+    "panel": "#F3F5FA",    # fondo de paneles y cajas
+    "grid": "#D8DEE6",
+    "zone_edge": "#B9C2CE",
+    "zone_empty": "#EDF1F6",
+}
+_BAR_COLOR = PALETTE["brand"]
+
+
+def rc_style() -> dict:
+    """Estilo global del informe (aplicar con matplotlib.rc_context)."""
+    return {
+        "font.family": "DejaVu Sans",
+        "font.size": 10,
+        "text.color": PALETTE["ink"],
+        "axes.edgecolor": PALETTE["grid"],
+        "axes.labelcolor": PALETTE["muted"],
+        "axes.titlesize": 11.5,
+        "axes.titlecolor": PALETTE["ink"],
+        "xtick.color": PALETTE["muted"],
+        "ytick.color": PALETTE["muted"],
+        "xtick.labelsize": 8.5,
+        "ytick.labelsize": 8.5,
+    }
 
 
 def plain(text: str) -> str:
@@ -156,7 +189,7 @@ def record(matches: pd.DataFrame) -> dict[str, int]:
 def _draw_pitch(ax: Axes) -> Axes:
     Pitch(pitch_type="opta").draw(ax=ax)
     ax.text(0.98, 1.0, "Ataque →", transform=ax.transAxes,
-            ha="right", va="bottom", fontsize=8)
+            ha="right", va="bottom", fontsize=8, color=PALETTE["muted"])
     return ax
 
 
@@ -166,14 +199,16 @@ def _zone_patches(ax: Axes, values: pd.Series, cmap_name: str,
     cmap = colormaps[cmap_name]
     for zone in range(1, _ZONE_COUNT + 1):
         value = float(values.get(zone, 0) or 0)
-        color = cmap(0.10 + 0.85 * value / vmax) if value > 0 else "white"
+        color = cmap(0.12 + 0.83 * value / vmax) if value > 0 else PALETTE["zone_empty"]
         x0, y0, w, h = zone_rect(zone)
         ax.add_patch(Rectangle((x0, y0), w, h, facecolor=color,
-                               edgecolor="0.75", linewidth=0.6))
+                               edgecolor=PALETTE["zone_edge"], linewidth=0.8))
         if labels is not None:
             label = labels.get(zone, "")
             if label:
-                ax.text(x0 + w / 2, y0 + h / 2, label, ha="center", va="center", fontsize=8)
+                ax.text(x0 + w / 2, y0 + h / 2, label, ha="center", va="center",
+                        fontsize=8, color=PALETTE["ink"], fontweight="bold",
+                        linespacing=1.35)
 
 
 def _goals_word(n: int) -> str:
@@ -184,9 +219,11 @@ def shot_map(ax: Axes, events: pd.DataFrame, team: str, title: str) -> Axes:
     """Zone map of shots (first line) and goals (second line); colour is total attempts."""
     attempts = select(events, team, ("shot", "goal"))
     _draw_pitch(ax)
-    ax.set_title(plain(title), fontsize=11, loc="left")
+    ax.set_title(plain(title), fontsize=11, loc="left", color=PALETTE["ink"],
+                 fontweight="bold", pad=13)
     ax.text(0.0, 1.0, "Primera línea: remates · segunda línea: goles",
-            transform=ax.transAxes, ha="left", va="bottom", fontsize=7.5, color="0.35")
+            transform=ax.transAxes, ha="left", va="bottom", fontsize=7.5,
+            color=PALETTE["muted"])
     if len(attempts) == 0:
         ax.text(50, 50, LABELS["no_data"], ha="center", va="center",
                 fontsize=12, color="0.4")
@@ -204,7 +241,8 @@ def shot_map(ax: Axes, events: pd.DataFrame, team: str, title: str) -> Axes:
 def zone_map(ax: Axes, values: pd.Series, title: str,
              labels: pd.Series | None = None) -> Axes:
     _draw_pitch(ax)
-    ax.set_title(plain(title), fontsize=11, loc="left")
+    ax.set_title(plain(title), fontsize=11, loc="left", color=PALETTE["ink"],
+                 fontweight="bold", pad=10)
     if len(values) == 0:
         ax.text(50, 50, LABELS["no_data"], ha="center", va="center",
                 fontsize=12, color="0.4")
@@ -215,58 +253,89 @@ def zone_map(ax: Axes, values: pd.Series, title: str,
 
 def bar_chart(ax: Axes, values: pd.Series, title: str,
               subtitle: str | None = None) -> Axes:
-    ax.set_title(plain(title), fontsize=11, loc="left")
+    ax.set_title(plain(title), fontsize=11, loc="left",
+                 color=PALETTE["ink"], fontweight="bold", pad=14 if subtitle else 8)
     if subtitle:
-        ax.text(0.0, 1.005, plain(subtitle), transform=ax.transAxes,
-                ha="left", va="bottom", fontsize=8, color="0.35")
+        ax.text(0.0, 1.045, plain(subtitle), transform=ax.transAxes,
+                ha="left", va="bottom", fontsize=8, color=PALETTE["muted"])
     values = pd.Series(values, dtype=float).replace([np.inf, -np.inf], np.nan).fillna(0)
     ax.set_xticks([])
     ax.set_yticks([])
-    for side in ("top", "right"):
+    for side in ("top", "right", "left"):
         ax.spines[side].set_visible(False)
+    ax.spines["bottom"].set_color(PALETTE["grid"])
     if len(values) == 0 or values.sum() == 0:
         ax.text(0.5, 0.5, LABELS["no_data"], transform=ax.transAxes,
-                ha="center", va="center", fontsize=11, color="0.4")
+                ha="center", va="center", fontsize=11, color=PALETTE["muted"])
         return ax
     names = [str(_label(k)) for k in values.index]
-    ax.bar(range(len(values)), values.values, color=_BAR_COLOR, width=0.65)
+    bars = ax.bar(range(len(values)), values.values, color=_BAR_COLOR, width=0.62)
+    for bar, v in zip(bars, values.values):
+        if v > 0:
+            ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 0.04,
+                    str(int(v)), ha="center", va="bottom", fontsize=8,
+                    color=PALETTE["muted"])
     ax.set_xticks(range(len(values)))
-    ax.set_xticklabels(names, fontsize=8.5)
+    rot = 30 if len(values) > 4 else 0
+    ax.set_xticklabels(names, fontsize=7.5 if rot else 8, rotation=rot,
+                       ha="right" if rot else "center")
     ax.tick_params(axis="y", labelsize=8)
-    ax.grid(axis="y", color="0.9", linewidth=0.6)
+    ax.grid(axis="y", color=PALETTE["grid"], linewidth=0.6)
     ax.set_axisbelow(True)
+    ax.set_ylim(0, max(values.values) * 1.18 + 0.1)
     return ax
 
 
 def _cell(value) -> str:
     if pd.isna(value):
-        return "sin datos"
+        return "—"
     if isinstance(value, float):
         return str(int(value)) if value.is_integer() else f"{value:.1f}"
     return str(value)
 
 
 def table(ax: Axes, frame: pd.DataFrame, title: str) -> Axes:
+    """Tabla con encabezado en azul, rayado suave y numeración alineada."""
     ax.axis("off")
-    ax.set_title(plain(title), fontsize=11, loc="left")
+    ax.set_title(plain(title), fontsize=11, loc="left", color=PALETTE["ink"],
+                 fontweight="bold", pad=10)
     if frame.empty:
         ax.text(0.5, 0.5, LABELS["no_data"], transform=ax.transAxes,
-                ha="center", va="center", fontsize=11, color="0.4")
+                ha="center", va="center", fontsize=11, color=PALETTE["muted"])
         return ax
     headers = [str(_label(c)) for c in frame.columns]
     rows = [[_cell(v) for v in row] for row in frame.itertuples(index=False, name=None)]
-    widths = [max(len(headers[i]), *(len(r[i]) for r in rows)) for i in range(len(headers))]
-
-    def line(cells: list[str]) -> str:
-        return "  ".join(cell.ljust(width) for cell, width in zip(cells, widths))
-
-    y = 0.98
-    ax.text(0.02, y, line(headers), transform=ax.transAxes, fontsize=9,
-            fontfamily="monospace", va="top")
-    for row in rows:
-        y -= 0.05
-        ax.text(0.02, y, line(row), transform=ax.transAxes, fontsize=9,
-                fontfamily="monospace", va="top")
+    fs = 9 if len(rows) <= 12 else 7.5
+    tbl = ax.table(cellText=rows, colLabels=headers, loc="upper left",
+                   cellLoc="left")
+    tbl.auto_set_font_size(False)
+    tbl.set_fontsize(fs)
+    tbl.scale(1, 1.6 if len(rows) <= 12 else 1.35)
+    try:
+        tbl.auto_set_column_width(range(len(headers)))
+    except Exception:
+        pass
+    for (r, c), cell in tbl.get_celld().items():
+        cell.set_edgecolor("none")
+        cell.set_linewidth(0)
+        cell.PAD = 0.04
+        txt = cell.get_text()
+        if r == 0:
+            cell.set_facecolor(PALETTE["brand"])
+            cell.set_height(cell.get_height() * 1.15)
+            txt.set_color("white")
+            txt.set_fontweight("bold")
+            txt.set_fontsize(fs)
+        else:
+            cell.set_facecolor("white" if r % 2 else PALETTE["panel"])
+            txt.set_color(PALETTE["ink"])
+            if c > 0:
+                txt.set_ha("right")
+        txt.set_fontfamily("DejaVu Sans")
+    ax.add_patch(Rectangle((0, 0), 1, 1, facecolor="none", edgecolor="none",
+                           transform=ax.transAxes))
+    ax.plot([0.02, 0.98], [0.985, 0.985], color=PALETTE["grid"], linewidth=0.8,
+            transform=ax.transAxes, clip_on=False)
     return ax
 
 
@@ -274,7 +343,8 @@ def zone_legend(ax: Axes) -> Axes:
     _draw_pitch(ax)
     for zone in range(1, _ZONE_COUNT + 1):
         x0, y0, w, h = zone_rect(zone)
-        ax.add_patch(Rectangle((x0, y0), w, h, facecolor="0.93",
-                               edgecolor="0.6", linewidth=0.6))
-        ax.text(x0 + w / 2, y0 + h / 2, str(zone), ha="center", va="center", fontsize=9)
+        ax.add_patch(Rectangle((x0, y0), w, h, facecolor=PALETTE["zone_empty"],
+                               edgecolor=PALETTE["zone_edge"], linewidth=0.8))
+        ax.text(x0 + w / 2, y0 + h / 2, str(zone), ha="center", va="center",
+                fontsize=9, color=PALETTE["muted"])
     return ax

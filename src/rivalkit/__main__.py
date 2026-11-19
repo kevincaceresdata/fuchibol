@@ -42,7 +42,9 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     try:
-        pages = write_report(data, notes, Path(args.output))
+        assets = folders[0] / "assets"
+        pages = write_report(data, notes, Path(args.output),
+                             assets_dir=assets if assets.is_dir() else None)
     except OSError as exc:
         reason = exc.strerror or str(exc)
         print(f"error: cannot write {args.output}: {reason} "

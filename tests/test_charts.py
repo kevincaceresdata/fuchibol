@@ -174,7 +174,7 @@ def test_record():
 
 
 def test_labels_and_plain():
-    assert LABELS["no_data"] == "Sin datos" and LABELS[""] == "Sin especificar"
+    assert LABELS["no_data"] == "Sin datos" and LABELS[""] == "S/ dato"
     assert plain("US$ 100") == "US\\$ 100"
 
 
