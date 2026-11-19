@@ -119,3 +119,23 @@ def test_overflow_warning_goes_to_stderr_but_exit_stays_0(tmp_path, capsys):
     assert main(args(out, notes=notes)) == 0
     assert 'aviso: el texto de "Plan de partido" excede la página; reduzca el texto' \
         in capsys.readouterr().err
+
+
+def test_spanish_accents_in_report_strings():
+    import inspect
+    from rivalkit import report
+
+    src = inspect.getsource(report)
+    for expected in (
+        "INFORME TÉCNICO",
+        "asistencia automática y revisión humana",
+        "Limitaciones: página 9",
+        "Página {k} de {PAGE_COUNT}",
+        "Condición:",
+        '"index": "Condición"',
+        "sitios de datos públicos",
+        "interpretación del analista",
+        "Ver limitaciones del análisis en la página 9",
+    ):
+        assert expected in src, f"missing accented string in report.py: {expected!r}"
+

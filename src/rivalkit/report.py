@@ -42,8 +42,8 @@ _LIMITATIONS = [
     "No se informan xG, xGA ni PPDA: los datos públicos disponibles no permiten calcularlos.",
     "Los hallazgos describen solo la muestra analizada y deben validarse con el video antes de usarse.",
     "Ubicaciones registradas en una cuadrícula de 18 zonas, sin coordenadas exactas.",
-    "Los sitios de datos publicos (FotMob, Sofascore) se consultaron por API para contrastar alineaciones, goleadores, tarjetas y mapa de remates.",
-    "Las observaciones, los jugadores clave y el plan de partido son interpretacion del analista.",
+    "Los sitios de datos públicos (FotMob, Sofascore) se consultaron por API para contrastar alineaciones, goleadores, tarjetas y mapa de remates.",
+    "Las observaciones, los jugadores clave y el plan de partido son interpretación del analista.",
 ]
 
 
@@ -74,7 +74,7 @@ def _page_cover(data: Dataset, notes: Notes, crest=None, opp_crest=None) -> Figu
         ax = fig.add_axes([0.5 - w / 2, 0.655 - h / 2, w, h])
         ax.axis("off")
         ax.imshow(crest, aspect="equal")
-    fig.text(0.5, 0.545, "INFORME TECNICO", fontsize=13, color=PALETTE["brand_light"],
+    fig.text(0.5, 0.545, "INFORME TÉCNICO", fontsize=13, color=PALETTE["brand_light"],
              ha="center", fontweight="bold")
     fig.text(0.5, 0.475, charts.plain(data.rival).upper(), fontsize=38, color="white",
              ha="center", va="center", fontweight="bold")
@@ -91,9 +91,9 @@ def _page_cover(data: Dataset, notes: Notes, crest=None, opp_crest=None) -> Figu
         fig.text(0.5, 0.40, f"{n} partidos analizados", fontsize=14, color="white",
                  ha="center", va="center")
     fig.text(0.5, 0.088, "Preparado con rivalkit · Datos etiquetados con asistencia "
-                         "automatica y revision humana", fontsize=8,
+                         "automática y revisión humana", fontsize=8,
              color=PALETTE["brand_light"], ha="center", va="center")
-    fig.text(0.5, 0.062, "Escudos: Wikimedia Commons (uso educativo) · Limitaciones: pagina 9",
+    fig.text(0.5, 0.062, "Escudos: Wikimedia Commons (uso educativo) · Limitaciones: página 9",
              fontsize=7, color="#8FA3D0", ha="center", va="center")
     return fig
 
@@ -149,8 +149,8 @@ def _page(title: str, rival: str, n: int, k: int, crest=None) -> Figure:
     if crest is not None:
         _crest_chip(fig, crest, 1 - _MARGIN, 0.9675, 0.34)
     footer = (f"{rival} · {n} partido{_plural(n)} analizado{_plural(n)} · "
-              f"Datos etiquetados con asistencia automatica y revision humana · "
-              f"Pagina {k} de {PAGE_COUNT}")
+              f"Datos etiquetados con asistencia automática y revisión humana · "
+              f"Página {k} de {PAGE_COUNT}")
     fig.text(_MARGIN, 0.045, charts.plain(footer), fontsize=8,
              color=PALETTE["muted"], va="bottom")
     fig.lines.append(plt_line(_MARGIN, 0.062, 1 - _MARGIN, 0.062, fig,
@@ -176,7 +176,7 @@ def _hero_card(fig: Figure, data: Dataset, y: float, crest, opp_crest) -> float:
     mid = str(m["match_id"]) if "match_id" in m else str(m["match"]).replace("\\", "/").split("/")[-1]
     fecha = (f"FECHA {mid[1:]}" if mid.lower().startswith("f") and mid[1:].isdigit()
              else mid.upper())
-    ax.text(0.5, 0.63, charts.plain(f"{fecha} · {m['date']:%d/%m/%Y} · Condicion: "
+    ax.text(0.5, 0.63, charts.plain(f"{fecha} · {m['date']:%d/%m/%Y} · Condición: "
                                     f"{'Local' if m['venue'] == 'home' else 'Visitante'}"),
             fontsize=8.5, color=PALETTE["muted"], ha="center", va="center",
             transform=ax.transAxes)
@@ -345,7 +345,7 @@ def _page_summary(fig: Figure, data: Dataset, notes: Notes,
         analyst += [f"- {t}" for t in notes.threats]
     y = _block(fig, y, "Lectura del analista", [l for seg in analyst for l in _wrap(seg, WRAP_FULL)])
     y = _data_box(fig, y, data_facts(data))
-    fig.text(_MARGIN, y, "Ver limitaciones del analisis en la pagina 8", fontsize=9,
+    fig.text(_MARGIN, y, "Ver limitaciones del análisis en la página 9", fontsize=9,
              color=PALETTE["muted"], va="top")
     return y
 
@@ -363,7 +363,7 @@ def _page_identity(fig: Figure, data: Dataset, notes: Notes) -> float:
     ax = fig.add_axes([_MARGIN, 0.27, 1 - 2 * _MARGIN, 0.15])
     splits = charts.venue_splits(data).copy()
     splits.index = ["Local", "Visitante"]
-    splits = splits.reset_index().rename(columns={"index": "Condicion"})
+    splits = splits.reset_index().rename(columns={"index": "Condición"})
     charts.table(ax, splits, _chart_title("Local y visitante", n))
     return _observation(fig, 0.225, notes, "identity_and_lineup")
 
