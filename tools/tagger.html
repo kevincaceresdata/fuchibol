@@ -1,213 +1,647 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="utf-8">
 <title>rivalkit tagger</title>
 <style>
-  body { font-family: system-ui, sans-serif; background: #1b1e24; color: #e8e8e8; margin: 0; display: flex; flex-wrap: wrap; }
-  #left { flex: 1 1 720px; padding: 10px; }
-  #right { flex: 1 1 380px; padding: 10px; }
-  video { width: 100%; background: #000; }
-  #status { font-size: 24px; font-weight: 700; padding: 10px; background: #263041; border-radius: 8px; margin: 8px 0; min-height: 34px; }
-  .row { margin: 6px 0; }
-  button { font-size: 15px; padding: 8px 10px; margin: 2px; border: 1px solid #444; border-radius: 6px; background: #2e3850; color: #fff; cursor: pointer; }
-  button:hover { background: #40507a; }
-  .zonegrid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 3px; margin: 4px 0; }
-  .zonegrid button { padding: 10px 0; font-size: 14px; }
-  #events { font-family: monospace; font-size: 12px; max-height: 220px; overflow-y: auto; background: #14171c; padding: 6px; border-radius: 6px; }
-  #events div { padding: 1px 0; }
-  input[type=number] { font-size: 15px; padding: 6px; width: 90px; background: #0f1216; color: #fff; border: 1px solid #444; border-radius: 6px; }
-  .hint { color: #9aa4b2; font-size: 13px; }
-  h3 { margin: 10px 0 4px; font-size: 14px; color: #9fb7dd; text-transform: uppercase; }
+  :root {
+    --bg: #14181f; --panel: #1e242e; --line: #2e3745;
+    --own: #1f6feb; --opp: #d2691e;
+    --txt: #e9edf3; --dim: #8b97a8; --ok: #2f9e5f;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    background: var(--bg); color: var(--txt); margin: 0;
+    display: flex; flex-wrap: wrap; align-items: flex-start;
+  }
+  #left { flex: 1 1 640px; padding: 12px; position: sticky; top: 0; }
+  #right { flex: 0 1 620px; padding: 12px; }
+  video { width: 100%; background: #000; border-radius: 8px; }
+
+  .bar { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; flex-wrap: wrap; }
+  .transport { display: flex; gap: 6px; margin: 8px 0 4px; flex-wrap: wrap; }
+  .transport button { min-width: 54px; }
+
+  #status {
+    font-size: 17px; font-weight: 700; padding: 12px 14px; border-radius: 10px;
+    background: var(--panel); border-left: 5px solid var(--dim); margin-bottom: 12px;
+  }
+  #status.ready { border-left-color: var(--ok); }
+  #status.warn { border-left-color: #d9534f; }
+
+  h3 {
+    margin: 14px 0 6px; font-size: 12px; letter-spacing: .08em;
+    text-transform: uppercase; color: var(--dim);
+  }
+  button {
+    font-family: inherit; font-size: 15px; padding: 10px 12px;
+    border: 1px solid var(--line); border-radius: 8px;
+    background: #2a3342; color: #fff; cursor: pointer;
+  }
+  button:hover { background: #37455a; }
+  button.mini { font-size: 12px; padding: 6px 9px; background: #232b37; }
+  input[type=file] { font-size: 12px; color: var(--dim); max-width: 240px; }
+
+  .cols { display: flex; gap: 14px; flex-wrap: wrap; }
+  .cols > section { flex: 1 1 240px; }
+
+  .types { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-auto-rows: 66px; gap: 6px; }
+  .types button {
+    height: 100%; padding: 6px; font-size: 15px; font-weight: 600;
+    line-height: 1.15; overflow: hidden;
+  }
+  .types button small { display: block; font-size: 10px; color: #9fb0c7; font-weight: 400; margin-top: 2px; }
+
+  .teams { display: grid; grid-template-columns: 1fr; gap: 6px; }
+  .teams button {
+    height: 56px; font-size: 16px; font-weight: 700; text-align: left; padding-left: 14px;
+    border-left: 6px solid var(--line);
+  }
+  .teams button[data-team=rival] { border-left-color: var(--own); }
+  .teams button[data-team=opponent] { border-left-color: var(--opp); }
+
+  .types button.on, .teams button.on { background: #3d5a86; outline: 2px solid #7aa7e8; }
+
+  .names { display: flex; gap: 6px; margin-top: 6px; }
+  .names input {
+    flex: 1 1 0; min-width: 0; font-size: 12px; padding: 6px 8px;
+    background: #0f1319; color: var(--txt); border: 1px solid var(--line); border-radius: 6px;
+  }
+
+  /* ---- cancha ---- */
+  .pitchWrap { position: relative; }
+  .pitch {
+    display: grid; grid-template-columns: repeat(6, 1fr); grid-template-rows: repeat(3, 1fr);
+    gap: 4px; padding: 10px; border-radius: 10px;
+    background: linear-gradient(180deg, #1d4d2b, #17401f);
+    border: 2px solid #3d7a4d; position: relative; min-height: 210px;
+  }
+  .pitch::before {
+    content: ""; position: absolute; left: 50%; top: 8px; bottom: 8px;
+    border-left: 2px dashed rgba(255,255,255,.28); z-index: 0;
+  }
+  .pitch::after {
+    content: ""; position: absolute; left: 50%; top: 50%; width: 58px; height: 58px;
+    margin: -29px 0 0 -29px; border: 2px solid rgba(255,255,255,.28); border-radius: 50%;
+    pointer-events: none; z-index: 0;
+  }
+  .zone {
+    position: relative; z-index: 1;
+    border: 1px solid rgba(255,255,255,.14); border-radius: 6px;
+    background: rgba(0,0,0,.10); color: #d8e7d9; font-size: 15px; font-weight: 700;
+    cursor: pointer; padding: 0; min-height: 58px;
+  }
+  .zone:hover { background: rgba(255,255,255,.16); }
+  .zone.on { background: #f0c419; color: #1a1a1a; border-color: #fff3b0; }
+  .axis { display: flex; justify-content: space-between; font-size: 11px; color: var(--dim); margin-top: 4px; }
+
+  .details { display: flex; gap: 6px; flex-wrap: wrap; }
+  .details button { font-size: 14px; padding: 10px 12px; }
+  .details button.on { background: #3d5a86; outline: 2px solid #7aa7e8; }
+  .details .empty { color: var(--dim); font-size: 13px; padding: 8px 0; }
+
+  .minuteRow { display: flex; gap: 8px; align-items: stretch; }
+  #minute {
+    width: 130px; font-size: 30px; font-weight: 700; text-align: center; padding: 6px;
+    background: #0f1319; color: #fff; border: 2px solid var(--line); border-radius: 8px;
+  }
+  #minute::placeholder { color: #4a5568; }
+  #save { flex: 1 1 auto; background: var(--ok); font-size: 20px; font-weight: 800; border: 0; }
+  #save:hover { background: #37b96f; }
+
+  .clock { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 8px; }
+  #autoMin { font-size: 13px; color: var(--dim); }
+
+  .listhead { margin: 16px 0 6px; font-size: 12px; color: var(--dim); text-transform: uppercase; letter-spacing: .06em; }
+  #events {
+    font-family: ui-monospace, Consolas, monospace; font-size: 12px;
+    max-height: 340px; overflow-y: auto; background: #10141a; padding: 8px; border-radius: 8px;
+  }
+  #events div { padding: 2px 0; border-bottom: 1px solid #1b212b; }
+  #export { width: 100%; margin-top: 8px; font-size: 16px; font-weight: 700; background: #2f7d4f; }
+  .hint { color: var(--dim); font-size: 12px; margin-top: 6px; }
 </style>
 </head>
 <body>
+
 <div id="left">
-  <div class="row"><input type="file" id="file" accept="video/*"> <span class="hint">cargá el mp4 del partido</span></div>
-  <video id="video" controls></video>
-  <div class="row hint">
-    Espacio play/pausa · &#8592;&#8594; ±5s · , . frame a frame (1/30s) · [ ] velocidad · Ctrl+Z deshacer
+  <div class="bar">
+    <input type="file" id="file" accept="video/*">
+    <span class="hint" id="fileName">cargá el mp4 del partido</span>
+    <input type="file" id="import" accept="application/json" hidden>
+    <button class="mini" id="importBtn">cargar JSON</button>
   </div>
+
+  <video id="video" controls playsinline></video>
+
+  <div class="transport">
+    <button data-seek="-10">« 10s</button>
+    <button data-seek="-5">« 5s</button>
+    <button id="playpause">play/pausa</button>
+    <button data-seek="5">5s »</button>
+    <button data-seek="10">10s »</button>
+    <button id="speedDown">− vel</button>
+    <button id="speedUp">+ vel</button>
+    <span class="hint" id="clockhint">1x</span>
+  </div>
+  <div class="hint">Espacio play/pausa · ←→ ±5s · , . frame · [ ] velocidad · Ctrl+Z deshacer</div>
 </div>
+
 <div id="right">
   <div id="status">Cargá un video para empezar</div>
 
-  <h3>1. Tipo</h3>
-  <div class="row" id="types">
-    <button data-k="s">S · remate</button><button data-k="g">G · gol</button><button data-k="c">C · corner</button>
-    <button data-k="f">F · tiro libre</button><button data-k="p">P · penal</button><button data-k="r">R · recupero</button>
+  <div class="cols">
+    <section>
+      <h3>1 · Qué pasó</h3>
+      <div class="types" id="types">
+        <button data-type="shot">Remate<small>tiro</small></button>
+        <button data-type="goal">Gol<small>adentro</small></button>
+        <button data-type="corner">Córner<small>esquina</small></button>
+        <button data-type="free_kick">Tiro libre<small>falta</small></button>
+        <button data-type="penalty">Penal<small>cobrado</small></button>
+        <button data-type="recovery">Recupero<small>robo</small></button>
+      </div>
+    </section>
+
+    <section>
+      <h3>2 · Quién</h3>
+      <div class="teams" id="teams">
+        <button data-team="rival" id="btnRival">Almagro</button>
+        <button data-team="opponent" id="btnOpponent">Oponente</button>
+      </div>
+      <div class="names">
+        <input id="rivalName" value="Almagro" title="nombre del equipo del informe">
+        <input id="oppName" value="Oponente" title="nombre del rival">
+      </div>
+    </section>
   </div>
 
-  <h3>2. Equipo</h3>
-  <div class="row" id="teams">
-    <button data-k="r">R · rival (equipo del informe)</button><button data-k="o">O · oponente</button>
+  <h3>3 · Dónde (click en la cancha)</h3>
+  <div class="pitchWrap">
+    <div class="pitch" id="pitch"></div>
+    <div class="axis"><span>← arco propio</span><span>ataque →</span></div>
   </div>
 
-  <h3>3. Zona — dos dígitos (01-18) o clic en la grilla</h3>
-  <div class="zonegrid" id="zones"></div>
+  <h3>4 · Detalle <span style="text-transform:none; letter-spacing:0">(opcional)</span></h3>
+  <div class="details" id="details"><div class="empty">Elegí primero el tipo de evento.</div></div>
 
-  <h3>4. Detalle (opcional · Enter para saltar)</h3>
-  <div class="row" id="details"></div>
-
-  <h3>5. Minuto del reloj del partido + Enter</h3>
-  <div class="row">
-    <input type="number" id="minute" min="0" max="130" placeholder="ej 23">
-    <button id="skipdetail">sin detalle</button>
+  <h3>5 · Minuto del reloj</h3>
+  <div class="minuteRow">
+    <input type="number" id="minute" min="0" max="130" placeholder="auto">
+    <button id="save">GUARDAR (Enter)</button>
   </div>
-  <div class="row hint" id="clockhint"></div>
+  <div class="clock">
+    <span id="autoMin">reloj automático: sin marcar</span>
+    <button class="mini" data-half="1">inicio 1T acá</button>
+    <button class="mini" data-half="2">inicio 2T acá</button>
+  </div>
 
-  <h3>Eventos (<span id="count">0</span>) <button id="undo">deshacer</button> <button id="clear">limpiar</button></h3>
+  <div class="listhead">
+    Eventos (<span id="count">0</span>)
+    <button class="mini" id="undo">deshacer</button>
+    <button class="mini" id="clear">limpiar</button>
+  </div>
   <div id="events"></div>
-  <div class="row" style="margin-top:8px">
-    <button id="export" style="font-size:17px; background:#2f7d4f">Descargar events_raw.json</button>
-  </div>
-  <div class="row hint">despu&eacute;s: .venv\Scripts\python scripts\tagger_export.py events_raw.json &gt; events.csv</div>
+
+  <button id="export">Descargar events_raw.json</button>
+  <div class="hint">después: .venv\Scripts\python scripts\tagger_export.py events_raw.json &gt; events.csv</div>
 </div>
+
 <script>
-const TYPES = {s:"shot", g:"goal", c:"corner", f:"free_kick", p:"penalty", r:"recovery"};
+"use strict";
+
 const DETAILS = {
-  goal: {1:"open_play", 2:"set_piece", 9:"penalty", 0:"own_goal"},
-  shot: {1:"on_target", 2:"off_target", 3:"blocked"},
-  corner: {1:"direct", 2:"crossed", 3:"short"},
-  free_kick: {1:"direct", 2:"crossed", 3:"short"}
+  goal: [
+    ["open_play", "juego abierto"],
+    ["set_piece", "pelota parada"],
+    ["penalty", "penal"],
+    ["own_goal", "en contra"]
+  ],
+  shot: [
+    ["on_target", "al arco"],
+    ["off_target", "afuera"],
+    ["blocked", "bloqueado"]
+  ],
+  corner: [
+    ["direct", "directo al arco"],
+    ["crossed", "centro"],
+    ["short", "corto"]
+  ],
+  free_kick: [
+    ["direct", "directo al arco"],
+    ["crossed", "centro"],
+    ["short", "corto"]
+  ]
 };
+
+const KEY_TYPE = {s: "shot", g: "goal", c: "corner", f: "free_kick", p: "penalty", r: "recovery"};
+
 const video = document.getElementById("video");
-const status = document.getElementById("status");
+const statusEl = document.getElementById("status");
 const minuteEl = document.getElementById("minute");
 const eventsEl = document.getElementById("events");
-let draft = null;
+const pitchEl = document.getElementById("pitch");
+const detailsEl = document.getElementById("details");
+const autoMinEl = document.getElementById("autoMin");
+const countEl = document.getElementById("count");
+
+let draft = {type: null, team: null, zone: null, detail: null};
 let events = [];
+let offsets = {1: null, 2: null};
+let half = 1;
+
 try {
   const saved = localStorage.getItem("rivalkit_tagger_events");
   if (saved) events = JSON.parse(saved) || [];
+  const sOff = localStorage.getItem("rivalkit_tagger_offsets");
+  if (sOff) offsets = JSON.parse(sOff) || offsets;
+  const sNames = localStorage.getItem("rivalkit_tagger_names");
+  if (sNames) {
+    const n = JSON.parse(sNames);
+    if (n.rival) document.getElementById("rivalName").value = n.rival;
+    if (n.opponent) document.getElementById("oppName").value = n.opponent;
+  }
 } catch (e) {}
 
-document.getElementById("file").addEventListener("change", e => {
-  if (e.target.files[0]) video.src = URL.createObjectURL(e.target.files[0]);
-});
+function persist() {
+  try {
+    localStorage.setItem("rivalkit_tagger_events", JSON.stringify(events));
+    localStorage.setItem("rivalkit_tagger_offsets", JSON.stringify(offsets));
+  } catch (e) {}
+}
+function persistNames() {
+  try {
+    localStorage.setItem("rivalkit_tagger_names", JSON.stringify({
+      rival: document.getElementById("rivalName").value.trim() || "Rival",
+      opponent: document.getElementById("oppName").value.trim() || "Oponente"
+    }));
+  } catch (e) {}
+}
 
-const zonesEl = document.getElementById("zones");
-for (let band = 0; band < 6; band++) for (let lane = 0; lane < 3; lane++) {
-  const z = band * 3 + lane + 1;
-  const b = document.createElement("button");
-  b.textContent = (z < 10 ? "0" : "") + z; b.dataset.k = z;
-  b.title = "banda " + (band + 1) + " carril " + (lane + 1);
-  zonesEl.appendChild(b);
+// Mismo orden que schema.zone_rect: banda = (zona-1)//3, carril = (zona-1)%3 (0 = arriba).
+// Fila superior: 1,4,7,10,13,16 · media: 2,5,8,11,14,17 · inferior: 3,6,9,12,15,18
+for (let lane = 0; lane < 3; lane++) {
+  for (let band = 0; band < 6; band++) {
+    const z = band * 3 + lane + 1;
+    const b = document.createElement("button");
+    b.className = "zone";
+    b.dataset.zone = z;
+    b.innerHTML = (z < 10 ? "0" + z : z);
+    b.title = "zona " + z;
+    pitchEl.appendChild(b);
+  }
+}
+
+function missing() {
+  const m = [];
+  if (!draft.type) m.push("qué pasó");
+  if (!draft.team) m.push("quién");
+  if (!draft.zone) m.push("dónde");
+  return m;
+}
+
+function autoMinute() {
+  let h = half;
+  if (offsets[2] !== null && video.currentTime >= offsets[2]) h = 2;
+  else if (offsets[1] !== null) h = 1;
+  const off = offsets[h];
+  if (off === null || off === undefined) return null;
+  const base = h === 1 ? 0 : 45;
+  const m = base + Math.floor((video.currentTime - off) / 60);
+  return m >= 0 ? m : null;
 }
 
 function setStatus(msg) {
-  if (!draft) { status.textContent = msg || "Listo · tipo (S/G/C/F/P/R)"; return; }
-  const parts = [draft.type.toUpperCase()];
-  if (draft.team) parts.push(draft.team === "rival" ? "RIVAL" : "OPONENTE");
-  if (draft.zone) parts.push("zona " + draft.zone);
-  if (draft.detail) parts.push(draft.detail);
-  status.textContent = parts.join(" · ") + (msg ? "  →  " + msg : "");
+  if (msg) {
+    statusEl.textContent = msg;
+    statusEl.className = "";
+    return;
+  }
+  const miss = missing();
+  if (miss.length) {
+    statusEl.textContent = "Falta: " + miss.join(" · ");
+    statusEl.className = "";
+    return;
+  }
+  const am = autoMinute();
+  statusEl.textContent = "LISTO → " + labelType(draft.type) + " · " +
+    teamName(draft.team) + " · zona " + pad(draft.zone) +
+    (draft.detail ? " · " + labelDetail(draft.type, draft.detail) : "") +
+    (am !== null && !minuteEl.value ? "  ·  minuto automático " + am + "'" : "");
+  statusEl.className = "ready";
+}
+
+function pad(z) { return z < 10 ? "0" + z : "" + z; }
+
+function labelDetail(t, v) {
+  if (!v) return "";
+  const pair = (DETAILS[t] || []).find(d => d[0] === v);
+  return pair ? pair[1] : v;
+}
+
+function labelType(t) {
+  const names = {shot: "remate", goal: "gol", corner: "córner", free_kick: "tiro libre", penalty: "penal", recovery: "recupero"};
+  return names[t] || t;
+}
+
+function teamName(t) {
+  return t === "rival"
+    ? (document.getElementById("rivalName").value.trim() || "Rival")
+    : (document.getElementById("oppName").value.trim() || "Oponente");
+}
+
+function markSelections() {
+  document.querySelectorAll("#types button").forEach(b => b.classList.toggle("on", b.dataset.type === draft.type));
+  document.querySelectorAll("#teams button").forEach(b => b.classList.toggle("on", b.dataset.team === draft.team));
+  document.querySelectorAll(".zone").forEach(b => b.classList.toggle("on", Number(b.dataset.zone) === draft.zone));
+  document.querySelectorAll("#details button").forEach(b => b.classList.toggle("on", b.dataset.detail === draft.detail));
+}
+
+function renderDetails() {
+  detailsEl.innerHTML = "";
+  const list = DETAILS[draft.type];
+  if (!list) {
+    const d = document.createElement("div");
+    d.className = "empty";
+    d.textContent = draft.type ? "Este evento no lleva detalle." : "Elegí primero el tipo de evento.";
+    detailsEl.appendChild(d);
+    return;
+  }
+  list.forEach(function (pair) {
+    const b = document.createElement("button");
+    b.dataset.detail = pair[0];
+    b.textContent = pair[1];
+    detailsEl.appendChild(b);
+  });
 }
 
 function render() {
-  try { localStorage.setItem("rivalkit_tagger_events", JSON.stringify(events)); } catch (e) {}
-  document.getElementById("count").textContent = events.length;
-  eventsEl.innerHTML = events.slice(-12).map(ev =>
-    "<div>" + ev.minute + "' " + ev.type + " " + ev.team + " z" + ev.zone +
-    (ev.detail ? " " + ev.detail : "") +
-    ' <span style="color:#667">ts ' + ev.ts.toFixed(1) + "s</span></div>"
-  ).join("");
+  persist();
+  countEl.textContent = events.length;
+  eventsEl.innerHTML = "";
+  const last = events;
+  last.forEach(function (ev, idx) {
+    const div = document.createElement("div");
+    div.style.cursor = "pointer";
+    div.title = "click: saltar a este momento \u00b7 \u2715: borrar";
+    const span = document.createElement("span");
+    span.textContent = pad(ev.minute) + "' \u00b7 " + labelType(ev.type) + " \u00b7 " +
+      (ev.team === "rival" ? teamName("rival") : teamName("opponent")) +
+      " \u00b7 z" + pad(ev.zone) +
+      (ev.detail ? " \u00b7 " + labelDetail(ev.type, ev.detail) : "") +
+      "  (ts " + ev.ts.toFixed(1) + "s)";
+    span.addEventListener("click", function () {
+      video.currentTime = ev.ts;
+      video.pause();
+    });
+    const del = document.createElement("button");
+    del.textContent = "\u2715";
+    del.className = "mini";
+    del.style.marginLeft = "8px";
+    del.style.padding = "0 6px";
+    del.title = "borrar este evento";
+    del.addEventListener("click", function (e) {
+      e.stopPropagation();
+      if (confirm("Borrar " + labelType(ev.type) + " " + pad(ev.minute) + "'?")) {
+        events.splice(idx, 1);
+        render();
+      }
+    });
+    div.appendChild(span);
+    div.appendChild(del);
+    eventsEl.appendChild(div);
+  });
 }
-
-function reset(msg) { draft = null; render(); setStatus(msg); }
 
 function confirmEvent() {
-  const m = parseInt(minuteEl.value, 10);
-  if (Number.isNaN(m) || m < 0 || m > 130) { status.textContent = "Falta el minuto del reloj del partido"; return; }
-  if (!draft || !draft.type || !draft.team || !draft.zone) { reset("Evento incompleto, empezá de nuevo"); return; }
-  events.push({minute: m, ts: video.currentTime, type: draft.type, team: draft.team, zone: draft.zone, detail: draft.detail || ""});
-  const saved = m + "' " + draft.type + " " + draft.team + " z" + draft.zone;
-  minuteEl.value = ""; minuteEl.blur();
-  draft = null; render();
-  status.textContent = "Guardado: " + saved + "  →  tipo (S/G/C/F/P/R)";
-}
+  const miss = missing();
+  if (miss.length) { setStatus(); return; }
 
-function handleKey(k) {
-  if (!draft) {
-    if (TYPES[k]) { draft = {type: TYPES[k]}; showDetailButtons(draft.type); setStatus("equipo (R/O)"); }
-    return;
-  }
-  if (!draft.team) {
-    if (k === "r") draft.team = "rival";
-    else if (k === "o") draft.team = "opponent";
-    else return;
-    setStatus("zona, dos dígitos 01-18");
-    return;
-  }
-  if (!draft.zone) {
-    const d = parseInt(k, 10);
-    if (isNaN(d)) return;
-    if (draft.zbuf === undefined) {
-      if (d >= 1 && d <= 9) { draft.zbuf = d; status.textContent = draft.type.toUpperCase() + " · " + (draft.team === "rival" ? "RIVAL" : "OPONENTE") + " · zona " + d + "... (2º dígito)"; }
+  var m = parseInt(minuteEl.value, 10);
+  if (Number.isNaN(m)) {
+    const am = autoMinute();
+    if (am === null) {
+      statusEl.textContent = "Falta el minuto: escribilo o marcá el inicio de tiempo";
+      statusEl.className = "warn";
+      minuteEl.focus();
       return;
     }
-    const zone = draft.zbuf * 10 + d;
-    if (zone >= 1 && zone <= 18) { draft.zone = zone; delete draft.zbuf; setStatus(nextStepHint()); }
-    else { delete draft.zbuf; status.textContent = "Zona inválida (01-18), de nuevo"; }
+    m = am;
+  }
+  if (m < 0 || m > 130) {
+    statusEl.textContent = "Minuto fuera de rango (0-130)";
+    statusEl.className = "warn";
     return;
   }
-  const dm = DETAILS[draft.type] || {};
-  if (dm[k] !== undefined) { draft.detail = dm[k]; setStatus("minuto + Enter"); minuteEl.focus(); }
+
+  events.push({
+    minute: m, ts: video.currentTime, type: draft.type,
+    team: draft.team, zone: draft.zone, detail: draft.detail || ""
+  });
+
+  const saved = pad(m) + "' · " + labelType(draft.type) + " · " + teamName(draft.team) + " · z" + pad(draft.zone);
+  draft = {type: null, team: null, zone: null, detail: null};
+  minuteEl.value = "";
+  minuteEl.blur();
+  renderDetails();
+  markSelections();
+  render();
+  statusEl.textContent = "Guardado " + saved + "  →  ahora el siguiente";
+  statusEl.className = "";
 }
 
-function nextStepHint() {
-  return (DETAILS[draft.type] && Object.keys(DETAILS[draft.type]).length) ? "detalle (opcional) o Enter para minuto" : "Enter para minuto";
-}
-
-function showDetailButtons(type) {
-  const dm = DETAILS[type] || {};
-  const el = document.getElementById("details");
-  el.innerHTML = "";
-  const names = {1:"direct", 2:"crossed/ot/sp", 3:"short/blocked", 0:"own_goal", 9:"penal", 7:"open_play", 8:"set_piece"};
-  for (const k of Object.keys(dm)) {
-    const b = document.createElement("button");
-    b.textContent = k + " · " + (names[k] || dm[k]);
-    b.addEventListener("click", () => { draft.detail = dm[k]; setStatus("minuto + Enter"); minuteEl.focus(); });
-    el.appendChild(b);
-  }
-}
-
-document.addEventListener("keydown", e => {
-  const typing = ["INPUT", "TEXTAREA"].includes(document.activeElement.tagName);
-  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z") { e.preventDefault(); events.pop(); reset("Último evento borrado"); return; }
-  if (typing) {
-    if (document.activeElement === minuteEl && e.key === "Enter") { e.preventDefault(); confirmEvent(); }
-    return;
-  }
-  if (e.key === " ") { e.preventDefault(); video.paused ? video.play() : video.pause(); return; }
-  if (e.key === "ArrowLeft") { e.preventDefault(); video.currentTime = Math.max(0, video.currentTime - 5); return; }
-  if (e.key === "ArrowRight") { e.preventDefault(); video.currentTime += 5; return; }
-  if (e.key === ",") { e.preventDefault(); video.currentTime = Math.max(0, video.currentTime - 1/30); return; }
-  if (e.key === ".") { e.preventDefault(); video.currentTime += 1/30; return; }
-  if (e.key === "[") { e.preventDefault(); video.playbackRate = Math.max(0.5, +(video.playbackRate - 0.25).toFixed(2)); clockhint(); return; }
-  if (e.key === "]") { e.preventDefault(); video.playbackRate = Math.min(2, +(video.playbackRate + 0.25).toFixed(2)); clockhint(); return; }
-  if (e.key === "Enter") { if (draft && draft.zone) { setStatus("minuto + Enter"); minuteEl.focus(); } else confirmEvent(); return; }
-  handleKey(e.key.toLowerCase());
+document.getElementById("types").addEventListener("click", function (e) {
+  const b = e.target.closest("button[data-type]");
+  if (!b) return;
+  draft.type = b.dataset.type;
+  draft.detail = null;
+  renderDetails();
+  markSelections();
+  setStatus();
 });
-function clockhint() { document.getElementById("clockhint").textContent = "velocidad " + video.playbackRate + "x · video en " + video.currentTime.toFixed(1) + "s"; }
 
-document.getElementById("types").addEventListener("click", e => { if (e.target.dataset.k) { draft = {type: TYPES[e.target.dataset.k]}; showDetailButtons(draft.type); setStatus("equipo (R/O)"); } });
-document.getElementById("teams").addEventListener("click", e => { if (e.target.dataset.k && draft) { draft.team = e.target.dataset.k === "r" ? "rival" : "opponent"; setStatus("zona, dos dígitos 01-18"); } });
-document.getElementById("zones").addEventListener("click", e => { if (e.target.dataset.k && draft && draft.team) { draft.zone = parseInt(e.target.dataset.k, 10); delete draft.zbuf; setStatus(nextStepHint()); } });
-document.getElementById("skipdetail").addEventListener("click", () => { if (draft) { delete draft.detail; setStatus("minuto + Enter"); minuteEl.focus(); } });
-document.getElementById("undo").addEventListener("click", () => { events.pop(); reset("Último evento borrado"); });
-document.getElementById("clear").addEventListener("click", () => { if (confirm("¿Borrar los " + events.length + " eventos?")) { events = []; reset("Todo limpio"); } });
-document.getElementById("export").addEventListener("click", () => {
-  const blob = new Blob([JSON.stringify({events}, null, 1)], {type: "application/json"});
+document.getElementById("teams").addEventListener("click", function (e) {
+  const b = e.target.closest("button[data-team]");
+  if (!b) return;
+  draft.team = b.dataset.team;
+  markSelections();
+  setStatus();
+});
+
+pitchEl.addEventListener("click", function (e) {
+  const b = e.target.closest("button[data-zone]");
+  if (!b) return;
+  draft.zone = Number(b.dataset.zone);
+  markSelections();
+  setStatus();
+});
+
+detailsEl.addEventListener("click", function (e) {
+  const b = e.target.closest("button[data-detail]");
+  if (!b) return;
+  draft.detail = (draft.detail === b.dataset.detail) ? null : b.dataset.detail;
+  markSelections();
+  setStatus();
+});
+
+document.getElementById("save").addEventListener("click", confirmEvent);
+
+document.getElementById("rivalName").addEventListener("input", function () { persistNames(); render(); setStatus(); });
+document.getElementById("oppName").addEventListener("input", function () { persistNames(); render(); setStatus(); });
+
+document.querySelectorAll("[data-half]").forEach(function (b) {
+  b.addEventListener("click", function () {
+    const h = Number(b.dataset.half);
+    offsets[h] = video.currentTime;
+    half = h;
+    persist();
+    autoMinEl.textContent = "reloj automático: " + (h === 1 ? "1T desde " : "2T desde ") + video.currentTime.toFixed(0) + "s";
+    setStatus();
+  });
+});
+
+document.querySelectorAll("[data-seek]").forEach(function (b) {
+  b.addEventListener("click", function () {
+    video.currentTime = Math.max(0, video.currentTime + Number(b.dataset.seek));
+  });
+});
+
+document.getElementById("playpause").addEventListener("click", function () { video.paused ? video.play() : video.pause(); });
+document.getElementById("speedDown").addEventListener("click", function () { setSpeed(-0.25); });
+document.getElementById("speedUp").addEventListener("click", function () { setSpeed(0.25); });
+
+function setSpeed(delta) {
+  video.playbackRate = Math.min(2, Math.max(0.5, +(video.playbackRate + delta).toFixed(2)));
+  clockhint();
+}
+function clockhint() {
+  document.getElementById("clockhint").textContent = video.playbackRate + "x · " + video.currentTime.toFixed(1) + "s";
+}
+
+document.getElementById("file").addEventListener("change", function (e) {
+  if (e.target.files[0]) {
+    video.src = URL.createObjectURL(e.target.files[0]);
+    document.getElementById("fileName").textContent = e.target.files[0].name;
+    setStatus();
+  }
+});
+
+document.getElementById("importBtn").addEventListener("click", function () {
+  document.getElementById("import").click();
+});
+
+document.getElementById("import").addEventListener("change", function (e) {
+  const f = e.target.files[0];
+  if (!f) return;
+  const reader = new FileReader();
+  reader.onload = function () {
+    try {
+      const data = JSON.parse(reader.result);
+      const list = Array.isArray(data) ? data : data.events;
+      if (!Array.isArray(list)) throw new Error("sin array de eventos");
+      events = events.concat(list);
+      render();
+      statusEl.textContent = "Importados " + list.length + " eventos · total " + events.length;
+      statusEl.className = "";
+    } catch (err) {
+      statusEl.textContent = "No pude leer ese JSON: " + err.message;
+      statusEl.className = "warn";
+    }
+  };
+  reader.readAsText(f);
+});
+
+document.getElementById("undo").addEventListener("click", function () {
+  events.pop();
+  render();
+  statusEl.textContent = "Último evento borrado";
+  statusEl.className = "";
+});
+
+document.getElementById("clear").addEventListener("click", function () {
+  if (confirm("¿Borrar los " + events.length + " eventos?")) {
+    events = [];
+    render();
+    statusEl.textContent = "Todo limpio";
+    statusEl.className = "";
+  }
+});
+
+document.getElementById("export").addEventListener("click", function () {
+  const blob = new Blob([JSON.stringify({events: events}, null, 1)], {type: "application/json"});
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
   a.download = "events_raw.json";
   a.click();
 });
-video.addEventListener("timeupdate", clockhint);
+
+document.addEventListener("keydown", function (e) {
+  const typing = ["INPUT", "TEXTAREA"].includes(document.activeElement.tagName);
+
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z") {
+    e.preventDefault(); events.pop(); render();
+    statusEl.textContent = "Último evento borrado"; statusEl.className = "";
+    return;
+  }
+
+  if (typing) {
+    if (document.activeElement === minuteEl && e.key === "Enter") { e.preventDefault(); confirmEvent(); }
+    return;
+  }
+
+  if (e.key === " ") { e.preventDefault(); video.paused ? video.play() : video.pause(); return; }
+  if (e.key === "ArrowLeft") { e.preventDefault(); video.currentTime = Math.max(0, video.currentTime - 5); return; }
+  if (e.key === "ArrowRight") { e.preventDefault(); video.currentTime += 5; return; }
+  if (e.key === ",") { e.preventDefault(); video.currentTime = Math.max(0, video.currentTime - 1 / 30); return; }
+  if (e.key === ".") { e.preventDefault(); video.currentTime += 1 / 30; return; }
+  if (e.key === "[") { e.preventDefault(); setSpeed(-0.25); return; }
+  if (e.key === "]") { e.preventDefault(); setSpeed(0.25); return; }
+
+  if (e.key === "Enter") {
+    e.preventDefault();
+    if (missing().length === 0) confirmEvent();
+    else minuteEl.focus();
+    return;
+  }
+
+  const k = e.key.toLowerCase();
+
+  if (/^[0-9]$/.test(k)) {
+    const d = Number(k);
+    if (draft.zpending === undefined) {
+      if (d >= 1 && d <= 9) { draft.zpending = d; }
+    } else {
+      const z = draft.zpending * 10 + d;
+      delete draft.zpending;
+      if (z >= 1 && z <= 18) { draft.zone = z; markSelections(); setStatus(); }
+      else { statusEl.textContent = "Zona inválida (01-18)"; statusEl.className = "warn"; }
+    }
+    return;
+  }
+
+  if (!draft.type && KEY_TYPE[k]) {
+    draft.type = KEY_TYPE[k]; draft.detail = null;
+    renderDetails(); markSelections(); setStatus(); return;
+  }
+  if (draft.type && !draft.team) {
+    if (k === "r") { draft.team = "rival"; markSelections(); setStatus(); return; }
+    if (k === "o") { draft.team = "opponent"; markSelections(); setStatus(); return; }
+  }
+});
+
+video.addEventListener("timeupdate", function () {
+  clockhint();
+  const am = autoMinute();
+  if (am !== null) autoMinEl.textContent = "reloj automático: " + am + "'";
+  if (missing().length === 0) setStatus();
+});
+
+renderDetails();
+markSelections();
+render();
 if (events.length > 0) {
-  status.textContent = "Sesión recuperada: " + events.length + " eventos guardados. Seguí o descargá el JSON.";
-  render();
+  statusEl.textContent = "Sesión recuperada: " + events.length + " eventos guardados";
 }
 setStatus();
 </script>

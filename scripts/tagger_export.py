@@ -65,7 +65,8 @@ def convert(rows: list[dict]) -> list[dict]:
         if errors and errors[-1].startswith(label):
             continue
         clean.append({"minute": minute, "ts": ts, "type": event_type,
-                      "team": team, "zone": zone, "detail": detail})
+                      "team": team, "zone": zone, "detail": detail,
+                      "player": str(ev.get("player") or "")})
     if errors:
         raise SystemExit("\n".join(errors))
 
@@ -76,7 +77,8 @@ def convert(rows: list[dict]) -> list[dict]:
         state = ("winning" if rival_goals > opponent_goals
                  else "losing" if rival_goals < opponent_goals else "drawing")
         out.append({"minute": e["minute"], "event_type": e["type"], "team": e["team"],
-                    "zone": e["zone"], "game_state": state, "player": "", "detail": e["detail"]})
+                    "zone": e["zone"], "game_state": state, "player": e["player"],
+                    "detail": e["detail"]})
         if e["type"] == "goal":
             # team is the credited side (own goals included), per the tagging guide
             if e["team"] == "rival":
