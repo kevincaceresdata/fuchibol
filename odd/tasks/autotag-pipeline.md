@@ -27,8 +27,8 @@ Ver `CAPABILITY-MAP.md` (módulos: `schema` ✅ · `detect` ✅ · `review` ⏳ 
 
 ### Fase 3 — Dejar el Repo Público Listo para Portfolio (antes de enviar links en mails)
 - [x] T5 (`S3`, inline): Restaurados `docs/tagging-guide.md` y `docs/data-sources.md` (referenciados por `README.md`) y actualizado `README.md` — commit `7d60745`
-- [x] T6 (`S3`, inline): Eliminadas las 5 carpetas vacías viejas `data/real/gc-f32..gc-f36` y actualizado `data/real/README.md`.
-- [ ] T7 (`S3`, decisión de Kevin): Merge de `feat/almagro-report` a `main` y push al remoto de GitHub.
+- [x] T6 (`S3`, inline): Eliminadas las 5 carpetas vacías viejas `data/real/gc-f32..gc-f36` y actualizado `data/real/README.md` — commit `e0ff705`
+- [x] T7 (`S3`, autorizado por Kevin): Rediseño visual v2 del PDF (`charts.py` + `report.py`: franja tricolor y tarjeta de partido con doble escudo en portada, tira de 4 KPIs, líneas de campo visibles sobre las 18 zonas con texto blanco de alto contraste, etiquetas en español para pelota parada, tablas de ancho completo sin colisiones, tarjetas estiladas de jugadores clave y cronología minuto×zona en página 8), exportación XML para Nacsport/Once Sport + 5 clips `.mp4` cortados en `outreach/almagro-entrega/`, merge de `feat/almagro-report` a `main` y push a GitHub.
 
 ### Fase 4 — Paquete de Entrega y Outreach (CABA / GBA)
 - [x] T8 (`S4`, inline): Creada carpeta/plantillas de entrega (`outreach/carta-almagro.md` y `outreach/ronda-1-mails.md`) para Almagro + los 6 clubes de Ronda 1 (Tristán Suárez, Morón, Atlanta, Almagro, Ferro, Temperley) — commit `7d60745`

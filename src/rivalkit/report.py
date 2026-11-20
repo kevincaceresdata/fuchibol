@@ -56,37 +56,52 @@ def _fecha_label(m) -> str:
 # --- portada -------------------------------------------------------------------------
 
 def _page_cover(data: Dataset, notes: Notes, crest=None, opp_crest=None) -> Figure:
-    """Portada a pagina completa: fondo azul profundo, escudo, rival y marcador."""
+    """Portada a pagina completa: fondo azul profundo, franja tricolor, escudo, rival y marcador."""
     fig = Figure(figsize=A4_INCHES)
     fig.patch.set_facecolor(PALETTE["brand_dark"])
-    fig.lines.append(plt_line(_MARGIN, 0.895, 1 - _MARGIN, 0.895, fig,
-                              color=PALETTE["brand_light"], linewidth=1.2))
+    # Franja tricolor superior e inferior (Azul Almagro / Blanco / Negro)
+    strip_top = fig.add_axes([_MARGIN, 0.885, 1 - 2 * _MARGIN, 0.012])
+    strip_top.axis("off")
+    strip_top.add_patch(Rectangle((0.0, 0), 0.34, 1, facecolor=PALETTE["brand"], transform=strip_top.transAxes))
+    strip_top.add_patch(Rectangle((0.34, 0), 0.32, 1, facecolor="white", transform=strip_top.transAxes))
+    strip_top.add_patch(Rectangle((0.66, 0), 0.34, 1, facecolor="#0B0F19", transform=strip_top.transAxes))
     fig.lines.append(plt_line(_MARGIN, 0.105, 1 - _MARGIN, 0.105, fig,
                               color=PALETTE["brand_light"], linewidth=1.2))
     if crest is not None:
-        size_in = 1.5
+        size_in = 1.55
         w, h = size_in / A4_INCHES[0], size_in / A4_INCHES[1]
-        back = fig.add_axes([0.5 - w / 2 - 0.012, 0.655 - h / 2 - 0.010, w + 0.024, h + 0.020])
+        back = fig.add_axes([0.5 - w / 2 - 0.014, 0.675 - h / 2 - 0.012, w + 0.028, h + 0.024])
         back.axis("off")
-        back.add_patch(FancyBboxPatch((0, 0), 1, 1, boxstyle="round,pad=0.02,rounding_size=0.10",
-                                      facecolor="white", edgecolor="none",
-                                      transform=back.transAxes))
-        ax = fig.add_axes([0.5 - w / 2, 0.655 - h / 2, w, h])
+        back.add_patch(FancyBboxPatch((0, 0), 1, 1, boxstyle="round,pad=0.02,rounding_size=0.12",
+                                      facecolor="white", edgecolor=PALETTE["brand_light"],
+                                      linewidth=1.5, transform=back.transAxes))
+        ax = fig.add_axes([0.5 - w / 2, 0.675 - h / 2, w, h])
         ax.axis("off")
         ax.imshow(crest, aspect="equal")
-    fig.text(0.5, 0.545, "INFORME TÉCNICO", fontsize=13, color=PALETTE["brand_light"],
+    fig.text(0.5, 0.555, "INFORME TÉCNICO", fontsize=13, color=PALETTE["brand_light"],
              ha="center", fontweight="bold")
-    fig.text(0.5, 0.475, charts.plain(data.rival).upper(), fontsize=38, color="white",
+    fig.text(0.5, 0.490, charts.plain(data.rival).upper(), fontsize=38, color="white",
              ha="center", va="center", fontweight="bold")
     n = len(data.matches)
     if n == 1:
         m = data.matches.iloc[0]
-        fig.text(0.5, 0.40, charts.plain(
+        card = fig.add_axes([_MARGIN + 0.06, 0.285, 1 - 2 * (_MARGIN + 0.06), 0.135])
+        card.axis("off")
+        card.add_patch(FancyBboxPatch((0, 0), 1, 1, boxstyle="round,pad=0.02,rounding_size=0.08",
+                                      facecolor="#132966", edgecolor=PALETTE["brand_light"],
+                                      linewidth=1.0, transform=card.transAxes))
+        if opp_crest is not None:
+            _crest_in_axes(card, opp_crest, 0.12, 0.58, 0.42)
+        if crest is not None:
+            _crest_in_axes(card, crest, 0.88, 0.58, 0.42)
+        card.text(0.5, 0.62, charts.plain(
             f"{m['opponent']}  {int(m['opponent_goals'])} - {int(m['rival_goals'])}  {data.rival}"),
-            fontsize=15, color="white", ha="center", va="center")
-        fig.text(0.5, 0.368, charts.plain(
+            fontsize=14.5, fontweight="bold", color="white", ha="center", va="center",
+            transform=card.transAxes)
+        card.text(0.5, 0.22, charts.plain(
             f"{m['competition']} · {_fecha_label(m)} · {m['date']:%d/%m/%Y}"),
-            fontsize=10, color=PALETTE["brand_light"], ha="center", va="center")
+            fontsize=9.5, color=PALETTE["brand_light"], ha="center", va="center",
+            transform=card.transAxes)
     else:
         fig.text(0.5, 0.40, f"{n} partidos analizados", fontsize=14, color="white",
                  ha="center", va="center")
@@ -315,27 +330,65 @@ def data_facts(data: Dataset) -> list[str]:
     return facts
 
 
+def _kpi_strip(fig: Figure, data: Dataset, y: float) -> float:
+    """Tira de 4 tarjetas KPI (Goles, Remates, Pelota parada, Zona frecuente)."""
+    events = data.events
+    rec = charts.record(data.matches)
+    shots_f = len(charts.select(events, "rival", ("shot", "goal")))
+    shots_a = len(charts.select(events, "opponent", ("shot", "goal")))
+    sp_f = len(charts.select(events, "rival", ("corner", "free_kick", "penalty")))
+    sp_a = len(charts.select(events, "opponent", ("corner", "free_kick", "penalty")))
+    zc = charts.zone_counts(charts.select(events, "rival", ("shot", "goal")))
+    top_zone = f"Zona {int(zc.idxmax())}" if zc.sum() > 0 else "—"
+    cards = [
+        ("GOLES (FAVOR / CONTRA)", f"{rec['goals_for']}  /  {rec['goals_against']}"),
+        ("REMATES TOTALES (F / C)", f"{shots_f}  /  {shots_a}"),
+        ("PELOTA PARADA (F / C)", f"{sp_f}  /  {sp_a}"),
+        ("ZONA PRINCIPAL ATAQUE", top_zone),
+    ]
+    h = 0.056
+    total_w = 1 - 2 * _MARGIN
+    gap = 0.014
+    w = (total_w - 3 * gap) / 4
+    for i, (label, val) in enumerate(cards):
+        ax = fig.add_axes([_MARGIN + i * (w + gap), y - h, w, h])
+        ax.axis("off")
+        ax.add_patch(FancyBboxPatch((0, 0), 1, 1, boxstyle="round,pad=0.01,rounding_size=0.08",
+                                    facecolor=PALETTE["panel"], edgecolor=PALETTE["grid"],
+                                    linewidth=0.8, transform=ax.transAxes))
+        ax.add_patch(Rectangle((0, 0.88), 1, 0.12, facecolor=PALETTE["brand"],
+                               edgecolor="none", transform=ax.transAxes))
+        ax.text(0.5, 0.62, val, fontsize=11.5, fontweight="bold",
+                color=PALETTE["brand_dark"], ha="center", va="center", transform=ax.transAxes)
+        ax.text(0.5, 0.22, label, fontsize=6.5, fontweight="bold",
+                color=PALETTE["muted"], ha="center", va="center", transform=ax.transAxes)
+    return y - h - 0.012
+
+
 def _page_summary(fig: Figure, data: Dataset, notes: Notes,
                   crest=None, opp_crest=None) -> float:
     y = 0.925
     y = _hero_card(fig, data, y, crest, opp_crest)
+    y = _kpi_strip(fig, data, y)
     skip = ("Rival:", "Competición:", "Fechas:") if len(data.matches) == 1 else ()
     for line in summary_lines(data):
         if line.startswith(skip) or (skip and line.endswith("partido analizado")
                                      and len(data.matches) == 1):
             continue
         if line.startswith("Muestra reducida"):
-            ax = fig.add_axes([_MARGIN, y - 0.045, 1 - 2 * _MARGIN, 0.04])
+            ax = fig.add_axes([_MARGIN, y - 0.036, 1 - 2 * _MARGIN, 0.032])
             ax.axis("off")
             ax.add_patch(Rectangle((0, 0), 1, 1, facecolor=PALETTE["alert_bg"],
                                    edgecolor="none", transform=ax.transAxes))
-            ax.text(0.02, 0.5, charts.plain(line), fontsize=9.5,
+            ax.add_patch(Rectangle((0, 0), 0.008, 1, facecolor=PALETTE["alert"],
+                                   edgecolor="none", transform=ax.transAxes))
+            ax.text(0.02, 0.5, charts.plain(line), fontsize=8.4,
                     color=PALETTE["alert"], va="center", transform=ax.transAxes)
-            y -= 0.058
+            y -= 0.046
         else:
-            fig.text(_MARGIN, y, charts.plain(line), fontsize=10, va="top")
-            y -= _LINE
-    y -= 0.006
+            fig.text(_MARGIN, y, charts.plain(line), fontsize=9.5, va="top")
+            y -= _LINE * 0.95
+    y -= 0.004
     analyst = [notes.identity] if notes.identity.strip() else []
     if notes.weaknesses:
         analyst.append("Debilidades a explotar:")
@@ -343,9 +396,10 @@ def _page_summary(fig: Figure, data: Dataset, notes: Notes,
     if notes.threats:
         analyst.append("Amenazas a neutralizar:")
         analyst += [f"- {t}" for t in notes.threats]
-    y = _block(fig, y, "Lectura del analista", [l for seg in analyst for l in _wrap(seg, WRAP_FULL)])
+    y = _block(fig, y, "Lectura del analista",
+               [l for seg in analyst for l in _wrap(seg, WRAP_FULL)], size=9.4)
     y = _data_box(fig, y, data_facts(data))
-    fig.text(_MARGIN, y, "Ver limitaciones del análisis en la página 9", fontsize=9,
+    fig.text(_MARGIN, y, "Ver limitaciones del análisis en la página 9", fontsize=8.5,
              color=PALETTE["muted"], va="top")
     return y
 
@@ -355,12 +409,12 @@ def _page_summary(fig: Figure, data: Dataset, notes: Notes,
 def _page_identity(fig: Figure, data: Dataset, notes: Notes) -> float:
     n = len(data.matches)
     frame, distinct = charts.lineup_summary(data)
-    ax = fig.add_axes([_MARGIN, 0.50, 1 - 2 * _MARGIN, 0.38])
+    ax = fig.add_axes([_MARGIN, 0.455, 1 - 2 * _MARGIN, 0.435])
     charts.table(ax, frame, _chart_title("Jugadores de la plantilla", n))
-    y = 0.455
+    y = 0.430
     fig.text(_MARGIN, y, f"Onces iniciales distintos: {distinct} en {n} partido{_plural(n)}",
              fontsize=10, fontweight="bold", va="top", color=PALETTE["brand"])
-    ax = fig.add_axes([_MARGIN, 0.27, 1 - 2 * _MARGIN, 0.15])
+    ax = fig.add_axes([_MARGIN, 0.265, 1 - 2 * _MARGIN, 0.115])
     splits = charts.venue_splits(data).copy()
     splits.index = ["Local", "Visitante"]
     splits = splits.reset_index().rename(columns={"index": "Condición"})
@@ -370,24 +424,24 @@ def _page_identity(fig: Figure, data: Dataset, notes: Notes) -> float:
 
 def _three_bars(fig: Figure, data: Dataset, team: str, base: str, y_axes: float) -> None:
     for i, by in enumerate(("interval", "detail", "game_state")):
-        ax = fig.add_axes([_MARGIN + i * 0.30, y_axes, 0.26, 0.17])
-        charts.bar_chart(ax, charts.goal_breakdown(data.events, team, by), "")
+        ax = fig.add_axes([_MARGIN + i * 0.30, y_axes, 0.24, 0.142])
+        charts.bar_chart(ax, charts.goal_breakdown(data.events, team, by), _axis_label(by))
 
 
 def _axis_label(by: str) -> str:
-    return {"interval": "minuto", "detail": "tipo", "game_state": "estado"}[by]
+    return {"interval": "Por tramo (min)", "detail": "Por vía de gol", "game_state": "Por estado"}[by]
 
 
 def _page_in_possession(fig: Figure, data: Dataset, notes: Notes) -> float:
     n = len(data.matches)
     fig.text(_MARGIN, 0.905, "Ataque organizado", fontsize=10.5, fontweight="bold",
              va="top", color=PALETTE["brand"])
-    ax = fig.add_axes([_MARGIN, 0.52, 1 - 2 * _MARGIN, 0.33])
+    ax = fig.add_axes([_MARGIN, 0.535, 1 - 2 * _MARGIN, 0.32])
     charts.shot_map(ax, data.events, "rival", _chart_title("Mapa de remates", n))
-    fig.text(_MARGIN, 0.475, "Goles a favor", fontsize=10.5, fontweight="bold", va="top",
+    fig.text(_MARGIN, 0.485, "Goles a favor", fontsize=10.5, fontweight="bold", va="top",
              color=PALETTE["brand"])
-    _three_bars(fig, data, "rival", "Goles", 0.28)
-    return _observation(fig, 0.24, notes, "in_possession")
+    _three_bars(fig, data, "rival", "Goles", 0.285)
+    return _observation(fig, 0.215, notes, "in_possession")
 
 
 def _page_out_of_possession(fig: Figure, data: Dataset, notes: Notes) -> float:
@@ -395,18 +449,18 @@ def _page_out_of_possession(fig: Figure, data: Dataset, notes: Notes) -> float:
     proxy = charts.pressing_proxy(data)
     fig.text(_MARGIN, 0.905, "Transición defensiva: presión (proxy)", fontsize=10.5,
              fontweight="bold", va="top", color=PALETTE["brand"])
-    ax = fig.add_axes([_MARGIN, 0.685, 1 - 2 * _MARGIN, 0.14])
+    ax = fig.add_axes([_MARGIN, 0.705, 1 - 2 * _MARGIN, 0.125])
     charts.bar_chart(ax, proxy, _chart_title("Recuperaciones en campo contrario", n),
                      subtitle=charts.PRESSING_PROXY_DEFINITION)
-    fig.text(_MARGIN, 0.655, f"Promedio: {proxy.mean():.1f} recuperaciones por partido",
-             fontsize=9, color=PALETTE["muted"], va="top")
-    fig.text(_MARGIN, 0.625, "Defensa organizada", fontsize=10.5, fontweight="bold",
+    fig.text(_MARGIN, 0.672, f"Promedio: {proxy.mean():.1f} recuperaciones por partido",
+             fontsize=8.5, color=PALETTE["muted"], va="top")
+    fig.text(_MARGIN, 0.642, "Defensa organizada", fontsize=10.5, fontweight="bold",
              va="top", color=PALETTE["brand"])
-    ax = fig.add_axes([_MARGIN, 0.425, 1 - 2 * _MARGIN, 0.16])
+    ax = fig.add_axes([_MARGIN, 0.445, 1 - 2 * _MARGIN, 0.165])
     charts.shot_map(ax, data.events, "opponent", _chart_title("Remates recibidos", n))
-    fig.text(_MARGIN, 0.395, "Goles en contra", fontsize=10.5, fontweight="bold",
+    fig.text(_MARGIN, 0.412, "Goles en contra", fontsize=10.5, fontweight="bold",
              va="top", color=PALETTE["brand"])
-    _three_bars(fig, data, "opponent", "Goles", 0.225)
+    _three_bars(fig, data, "opponent", "Goles", 0.222)
     return _observation(fig, 0.155, notes, "out_of_possession")
 
 
@@ -435,29 +489,72 @@ def _page_set_pieces(fig: Figure, data: Dataset, notes: Notes) -> float:
 
 
 def _page_key_players(fig: Figure, data: Dataset, notes: Notes) -> float:
-    y = 0.92
+    y = 0.915
     if not notes.key_players:
         y = _block(fig, y, None, ["El analista no incluyó jugadores clave en las notas de este informe."])
     else:
         frame, _ = charts.lineup_summary(data)
         by_name = frame.set_index("player") if len(frame) else frame
-        goals = data.events[(data.events["event_type"] == "goal") & (data.events["team"] == "rival")]
+        rival_ev = data.events[data.events["team"] == "rival"]
+        goals = rival_ev[rival_ev["event_type"] == "goal"]
+        shots = rival_ev[rival_ev["event_type"].isin(("shot", "goal"))]
         for name, note in notes.key_players:
-            fig.text(_MARGIN, y, charts.plain(name), fontsize=12, fontweight="bold",
-                     va="top", color=PALETTE["brand"])
-            y -= _LINE * 1.2
-            y = _block(fig, y, None, _wrap(note, WRAP_FULL))
-            facts = []
+            wrapped = _wrap(note, WRAP_FULL - 6)
+            card_h = max(0.085, 0.048 + len(wrapped) * _LINE * 0.95)
+            ax = fig.add_axes([_MARGIN, y - card_h, 1 - 2 * _MARGIN, card_h])
+            ax.axis("off")
+            ax.add_patch(FancyBboxPatch((0, 0), 1, 1, boxstyle="round,pad=0.008,rounding_size=0.05",
+                                        facecolor=PALETTE["panel"], edgecolor=PALETTE["grid"],
+                                        linewidth=0.8, transform=ax.transAxes))
+            ax.add_patch(Rectangle((0, 0), 0.010, 1, facecolor=PALETTE["brand"],
+                                   edgecolor="none", transform=ax.transAxes))
+            ax.text(0.025, 0.78, charts.plain(name), fontsize=11.5, fontweight="bold",
+                    va="center", color=PALETTE["brand_dark"], transform=ax.transAxes)
             if len(by_name) and name in by_name.index:
                 row = by_name.loc[name]
                 scored = int((goals["player"] == name).sum())
-                goals_txt = f", {scored} gol{'es' if scored != 1 else ''}" if scored else ""
-                facts.append(f"Datos: {int(row['starts'])} titularidades, "
-                             f"{int(row['minutes'])} minutos{goals_txt}")
-            if facts:
-                y = _block(fig, y - 0.002, None, facts, size=8.5, color=PALETTE["muted"])
-            y -= 0.004
-    return _observation(fig, y, notes, "key_players")
+                att = int((shots["player"] == name).sum())
+                pos = str(row["position"]) if pd.notna(row["position"]) and str(row["position"]) else "—"
+                badge = (f"Pos: {pos} · {int(row['starts'])} tit. · {int(row['minutes'])} min"
+                         f" · {att} rem. · {scored} gol{'es' if scored != 1 else ''}")
+                ax.text(0.98, 0.78, charts.plain(badge), fontsize=8.5, fontweight="bold",
+                        va="center", ha="right", color=PALETTE["brand"], transform=ax.transAxes)
+            for idx, ln in enumerate(wrapped):
+                ax.text(0.025, 0.45 - idx * 0.24, charts.plain(ln), fontsize=9.5,
+                        va="center", color=PALETTE["ink"], transform=ax.transAxes)
+            y -= card_h + 0.016
+    return _observation(fig, y - 0.005, notes, "key_players")
+
+
+def _draw_timeline_matrix(fig: Figure, data: Dataset, y_top: float) -> float:
+    """Cronología táctica de eventos (minuto 0..95 x zona 1..18) para Plan de partido."""
+    events = data.events
+    if events.empty or y_top < 0.34:
+        return y_top
+    h = min(0.23, y_top - 0.095)
+    ax = fig.add_axes([_MARGIN + 0.055, y_top - h - 0.02, 1 - 2 * _MARGIN - 0.055, h])
+    ax.set_title("Cronología de eventos por minuto y zona (azul: rival · ámbar: oponente · ★: gol)",
+                 fontsize=9.5, fontweight="bold", loc="left", color=PALETTE["brand"], pad=6)
+    ax.set_xlim(0, 96)
+    ax.set_ylim(0.5, 18.5)
+    ax.set_xticks(range(0, 95, 15))
+    ax.set_xticklabels([f"{m}'" for m in range(0, 95, 15)], fontsize=7.5)
+    ax.set_yticks([2, 5, 8, 11, 14, 17])
+    ax.set_yticklabels(["Z01-03 (Prop.)", "Z04-06", "Z07-09",
+                        "Z10-12", "Z13-15", "Z16-18 (Rival)"], fontsize=7)
+    ax.axvline(45, color=PALETTE["muted"], linestyle="--", linewidth=0.8, alpha=0.6)
+    ax.grid(True, color=PALETTE["grid"], linewidth=0.5, alpha=0.7)
+    for side in ("top", "right"):
+        ax.spines[side].set_visible(False)
+    ordered = events.sort_values(["minute", "zone", "team", "event_type"], kind="mergesort")
+    for row in ordered.itertuples(index=False):
+        color = PALETTE["brand"] if row.team == "rival" else PALETTE["opp"]
+        is_goal = row.event_type == "goal"
+        marker = "*" if is_goal else ("o" if row.event_type == "shot" else "s")
+        size = 110 if is_goal else 36
+        ax.scatter(row.minute, row.zone, c=color, marker=marker, s=size,
+                   edgecolors="white", linewidths=0.6, alpha=0.92, zorder=4 if is_goal else 3)
+    return y_top - h - 0.035
 
 
 def _page_match_plan(fig: Figure, data: Dataset, notes: Notes) -> float:
@@ -469,8 +566,16 @@ def _page_match_plan(fig: Figure, data: Dataset, notes: Notes) -> float:
         lines += ["   " + line for line in wrapped[1:]]
     y = _block(fig, y, "Instrucciones", lines)
     if notes.clips:
-        y = _block(fig, y, "Clips de referencia", [f"- {c}" for c in notes.clips])
-    return _observation(fig, y, notes, "match_plan")
+        clip_lines = []
+        for c in notes.clips:
+            w = _wrap(c, WRAP_FULL - 2)
+            clip_lines.append(f"- {w[0]}")
+            clip_lines += ["  " + ln for ln in w[1:]]
+        y = _block(fig, y, "Clips de referencia", clip_lines)
+    y = _observation(fig, y, notes, "match_plan")
+    if y > 0.36:
+        _draw_timeline_matrix(fig, data, y - 0.01)
+    return y
 
 
 def _page_sources(fig: Figure, data: Dataset, notes: Notes) -> float:

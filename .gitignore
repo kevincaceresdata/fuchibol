@@ -14,5 +14,6 @@ dist/
 
 # local real data (matches tagged by hand; never committed)
 data/real/
+outreach/
 # Local AI runtime state
 .atl/
