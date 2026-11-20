@@ -19,19 +19,19 @@ Ver `CAPABILITY-MAP.md` (módulos: `schema` ✅ · `detect` ✅ · `review` ⏳ 
 - [x] T1 (`S1`): `SPEC-report.md` implementado (portada + 8 páginas, branding Almagro, tablas `ax.table`) — commit `34d83ec`
 - [x] T2 (`S1`): Acentos corregidos en `report.py` y `notes.toml` ("Julián Marchioni" matchea `lineup.csv`) + PDF F36 regenerado — commit `89c48e8`
 - [x] T3 (`S2`): Rescatar pipeline de `%TEMP%` a `src/rivalkit/detect/` + `SPEC-detect.md` + `tests/test_detect.py` (76 tests verdes) — commit `15e97e4`
-- [ ] T4 (`S4`, inline): Resolver los 5 puntos de `data/real/almagro-f36-agropecuario/PENDIENTES_REVISION.md` y regenerar `events.csv` + PDF F36 definitivo.
+- [x] T4 (`S4`, inline): Resueltos los 5 puntos de `data/real/almagro-f36-agropecuario/PENDIENTES_REVISION.md` con evidencia visual de tiras (`ev13_m56.png`, `ev07_m34.png`, `ev03_m16.png`, `ev04_m21.png`, `cov08.png`) + `shotmap.json`; regenerados `events.csv` (37 eventos limpios), `matriz_eventos.png` e `Informe-Tecnico-Almagro-F36-Agropecuario.pdf` (con `Joel Orlando: 1 gol` en página 7).
 
 ### Fase 2 — Cerrar YOLO Tracking + Orquestador Autotag (SDD + Ponytail, 2 workers en paralelo)
-- [x] T9 (`S5`, delegated parallel writer 1 — `gentle-ai-worker` `GLM 5.3`): `SPEC-tracking.md`, `src/rivalkit/tracking.py` y `tests/test_tracking.py` (RED → GREEN, 13 tests).
-- [x] T10 (`S6`, delegated parallel writer 2 — `gentle-ai-worker` `GLM 5.3`): `src/rivalkit/detect/pipeline.py` y `tests/test_detect_pipeline.py` (RED → GREEN, 15 tests).
+- [x] T9 (`S5`, delegated parallel writer 1 — `gentle-ai-worker` `GLM 5.3`): `SPEC-tracking.md`, `src/rivalkit/tracking.py` y `tests/test_tracking.py` (RED → GREEN, 13 tests) — commit `56cc0f5`
+- [x] T10 (`S6`, delegated parallel writer 2 — `gentle-ai-worker` `GLM 5.3`): `src/rivalkit/detect/pipeline.py` y `tests/test_detect_pipeline.py` (RED → GREEN, 15 tests) — commit `1cc2738`
 
 ### Fase 3 — Dejar el Repo Público Listo para Portfolio (antes de enviar links en mails)
-- [x] T5 (`S3`, inline): Restaurados `docs/tagging-guide.md` y `docs/data-sources.md` (referenciados por `README.md`) y actualizado `README.md`.
-- [ ] T6 (`S3`, inline): Limpiar carpetas vacías viejas `data/real/gc-f32..gc-f36` (esperando confirmación de Kevin).
+- [x] T5 (`S3`, inline): Restaurados `docs/tagging-guide.md` y `docs/data-sources.md` (referenciados por `README.md`) y actualizado `README.md` — commit `7d60745`
+- [x] T6 (`S3`, inline): Eliminadas las 5 carpetas vacías viejas `data/real/gc-f32..gc-f36` y actualizado `data/real/README.md`.
 - [ ] T7 (`S3`, decisión de Kevin): Merge de `feat/almagro-report` a `main` y push al remoto de GitHub.
 
 ### Fase 4 — Paquete de Entrega y Outreach (CABA / GBA)
-- [x] T8 (`S4`, inline): Creada carpeta/plantillas de entrega (`outreach/carta-almagro.md` y `outreach/ronda-1-mails.md`) para Almagro + los 6 clubes de Ronda 1 (Tristán Suárez, Morón, Atlanta, Almagro, Ferro, Temperley).
+- [x] T8 (`S4`, inline): Creada carpeta/plantillas de entrega (`outreach/carta-almagro.md` y `outreach/ronda-1-mails.md`) para Almagro + los 6 clubes de Ronda 1 (Tristán Suárez, Morón, Atlanta, Almagro, Ferro, Temperley) — commit `7d60745`
 
 ## Log
 L1 (2026-11-17): Kevin pidió "todo el proyecto dentro del marco SDD". Mapa de capacidades creado en `CAPABILITY-MAP.md`.
