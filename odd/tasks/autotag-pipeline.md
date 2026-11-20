@@ -1,53 +1,42 @@
-# Feature: autotag-pipeline
+# Feature: autotag-pipeline & rival-report-kit master plan
 
-Pipeline completo: video de un partido → eventos validados → zonas medidas → informe PDF.
-Marco: Spec-Driven Development (ver CAPABILITY-MAP.md en la raíz, que es el índice aprobado de módulos).
-Logbook ODD: este archivo. Specs: SPEC-<module>.md en la raíz (una por módulo del mapa).
+Objetivo: Cerrar el informe real F36 (Almagro), dejar el repo público `rival-report-kit` impecable para portfolio, ejecutar el outreach a clubes de Primera Nacional (CABA/GBA) y completar los módulos SDD restantes.
+Marco híbrido: **SDD** para contratos de arquitectura (`CAPABILITY-MAP.md` + `SPEC-<module>.md`) + **ODD** en este archivo como único logbook maestro de ejecución.
+Rama activa: `feat/almagro-report` · Test runner: `.venv\Scripts\python -m pytest -q` (76 tests verdes).
 
 ## Specs
-Ver CAPABILITY-MAP.md (módulos: schema ✅ · detect ✅ · review · merge · tracking · report ✅)
-SPEC-report.md ✅ escrito e implementado (portada + 8 páginas, branding, tablas, acentos).
-SPEC-detect.md ✅ escrito e implementado (`src/rivalkit/detect/` con 7 submódulos + `tests/test_detect.py`).
+Ver `CAPABILITY-MAP.md` (módulos: `schema` ✅ · `detect` ✅ · `review` ⏳ · `merge` ⏳ · `tracking` ⏳ · `report` ✅)
+- `S1` (`SPEC-report.md` ✅): Informe PDF A4 de 9 páginas (portada + 8 de contenido), branding con escudos opcionales en `assets/`, tablas estiladas y acentos en español.
+- `S2` (`SPEC-detect.md` ✅): Pipeline de detección asistida (`src/rivalkit/detect/`: diff de marcador, picos de audio, dígitos MSE, tiras de 12 frames, Whisper 16 kHz, fusión de shotmap, matriz 6x3 y cruce de goles con tracking).
+- `S3` (Higiene de repo y docs públicos): Restaurar `docs/tagging-guide.md` y `docs/data-sources.md` (referenciados en `README.md` y perdidos en el incidente del 17/11) y actualizar `README.md` a 9 páginas / 76 tests / módulo `detect`.
+- `S4` (Entregable F36 Almagro + Outreach Ronda 1): Cerrar los 5 puntos de `PENDIENTES_REVISION.md`, regenerar el PDF definitivo y armar la carpeta de entrega + textos para Almagro y los clubes de CABA/GBA (priorizando los que juegan Cuartos del Reducido: Tristán Suárez, Atlanta, Morón, más Ferro y Temperley).
+- `S5` (`SPEC-tracking.md`): Módulo plano `src/rivalkit/tracking.py` (estilo Ponytail: un solo archivo plano como `schema.py`/`charts.py`/`report.py`). Incluye filtro de césped HSV (`is_grass`), corte de escena por histograma (`lower_hist`, `is_main_scene`), proyección homográfica a metros `105x68` (`project_points`), clasificación de camiseta HSV + 2-means (`team_of_patch`, `classify_tracks`), zona `1..18` desde tracking en ventana temporal (`zone_of`, `window_zone`, `analyze_goal_rows`), y runner YOLO+ByteTrack con imports perezosos (`track_clip`).
+- `S6` (`src/rivalkit/detect/pipeline.py`): Orquestador único de autotag (`fuse_candidates`, `minute_from_ts`, `enrich_with_tracking`, `run_pipeline`, CLI `python -m rivalkit.detect.pipeline`) que fusiona flips de marcador (`flips.json` → goles exactos), hits de relato (`transcript.jsonl` → corner/free_kick/penalty/shot), picos de audio (`peaks.json` → candidatos agrupados en ventana de `merge_window_s=12s`), shotmap opcional (`merge_shots`) y posiciones de tracking (`pitch_positions.csv` → `zone 1..18`), produciendo `events_raw.json` listo para `tools/tagger.html` y `scripts/tagger_export.py`.
 
 ## Tasks
-- [x] Capability map en uso (aprobación de facto: Kevin trabajó sobre él sin objeciones)
-- [x] SPEC-report.md escrito, implementado y commiteado
-- [x] Tagger v2 probado por Kevin (bugs encontrados y corregidos por uso real)
-- [x] Mover pipeline autotag de %TEMP% al repo (src/rivalkit/detect/) + SPEC-detect.md (inline, 8 tests nuevos en tests/test_detect.py, 76 tests verdes)
-- [ ] Revisión humana de Kevin: PENDIENTES_REVISION.md (5 puntos; el penal del 56' primero)
-- [x] PDF definitivo: acentos en textos del report ("Condicion" → "Condición" etc., commit 89c48e8) + regeneración del PDF F36
-- [ ] Carta de presentación para Almagro + carpeta de entrega (PDF + carta + CV)
-- [ ] Colab nocturno: tracking completo + Whisper large + cortes de cámara
-- [ ] Ronda de 6 mails (Ferro, Morón, Temperley, T. Suárez, Godoy Cruz) con el PDF
-- [ ] Merge/push de feat/almagro-report (decisión de Kevin)
+
+### Fase 1 — Cerrar Entregable Real #1 (Partido F36: Agropecuario 2-1 Almagro)
+- [x] T1 (`S1`): `SPEC-report.md` implementado (portada + 8 páginas, branding Almagro, tablas `ax.table`) — commit `34d83ec`
+- [x] T2 (`S1`): Acentos corregidos en `report.py` y `notes.toml` ("Julián Marchioni" matchea `lineup.csv`) + PDF F36 regenerado — commit `89c48e8`
+- [x] T3 (`S2`): Rescatar pipeline de `%TEMP%` a `src/rivalkit/detect/` + `SPEC-detect.md` + `tests/test_detect.py` (76 tests verdes) — commit `15e97e4`
+- [ ] T4 (`S4`, inline): Resolver los 5 puntos de `data/real/almagro-f36-agropecuario/PENDIENTES_REVISION.md` y regenerar `events.csv` + PDF F36 definitivo.
+
+### Fase 2 — Cerrar YOLO Tracking + Orquestador Autotag (SDD + Ponytail, 2 workers en paralelo)
+- [x] T9 (`S5`, delegated parallel writer 1 — `gentle-ai-worker` `GLM 5.3`): `SPEC-tracking.md`, `src/rivalkit/tracking.py` y `tests/test_tracking.py` (RED → GREEN, 13 tests).
+- [x] T10 (`S6`, delegated parallel writer 2 — `gentle-ai-worker` `GLM 5.3`): `src/rivalkit/detect/pipeline.py` y `tests/test_detect_pipeline.py` (RED → GREEN, 15 tests).
+
+### Fase 3 — Dejar el Repo Público Listo para Portfolio (antes de enviar links en mails)
+- [x] T5 (`S3`, inline): Restaurados `docs/tagging-guide.md` y `docs/data-sources.md` (referenciados por `README.md`) y actualizado `README.md`.
+- [ ] T6 (`S3`, inline): Limpiar carpetas vacías viejas `data/real/gc-f32..gc-f36` (esperando confirmación de Kevin).
+- [ ] T7 (`S3`, decisión de Kevin): Merge de `feat/almagro-report` a `main` y push al remoto de GitHub.
+
+### Fase 4 — Paquete de Entrega y Outreach (CABA / GBA)
+- [x] T8 (`S4`, inline): Creada carpeta/plantillas de entrega (`outreach/carta-almagro.md` y `outreach/ronda-1-mails.md`) para Almagro + los 6 clubes de Ronda 1 (Tristán Suárez, Morón, Atlanta, Almagro, Ferro, Temperley).
 
 ## Log
-L1 (2026-11-17): Kevin pidió "todo el proyecto dentro del marco SDD". Mapa de capacidades
-creado en CAPABILITY-MAP.md. Investigación de validación: SoccerNet (eventos desde
-transmisión ~50% mAP → fusión+hombre), SkillCorner (broadcast tracking comercial),
-post básquet single-cam (mismo patrón que nuestro tracking), hackathon Barça/Metrica
-(posesión automática 0.61 SpellF1 → la estimamos con heurísticas honestas).
-Paralelo operativo: revisión de tiras del partido f36 (22 eventos revisados, barrido
-de cobertura al ~50%), transcripción Whisper corriendo en local.
-L2 (2026-11-18): Partido f36 taggeado y validado por 5 fuentes: marcador (flip de dígitos
-exacto), audio (picos RMS), tiras de frames (22 eventos revisados: 4 borrados, 2 reclasif,
-9 confirmados, 9 flaggeados + 3 córners nuevos del barrido), transcripción Whisper (108 hits,
-"ES PENAL" del 56' + nombres) y APIs FotMob/Sofascore (alineaciones XI con minutos, golesadores
-Gagliardi 6' / Orlando 43' / J.C. Vega 62', 4 tarjetas, shotmap fusionado → 40 eventos).
-Arqueros resueltos: AGR amarillo (Acosta), ALM rosa. Dos Vegas (J.C. AGR #10 vs Facundo ALM #9).
-Calibración: goles 3/3, pelotas paradas ~85%, remates abiertos ~40%.
-L3 (2026-11-18): Informe 9 páginas con branding Almagro (azul #1B3C8C/negro): portada a página
-completa con escudo real (Wikimedia), banda con escudo por página, hero card con marcador,
-tablas reales (encabezado azul, zebra, "—"), solapamientos corregidos, escudos en assets/
-(gitignored). Kevin: "se ve horrible" la tabla monospace → reemplazada por ax.table estilada.
-PDF final: data/real/almagro-f36-agropecuario/Informe-Tecnico-Almagro-F36-Agropecuario.pdf
-L4 (2026-11-19): Commits de unidad de trabajo en rama feat/almagro-report:
-b57c7f8 (tagger v2 + player passthrough, 581 ins) y 34d83ec (branding + SDD artifacts, 469 ins).
-Working tree limpio. Roadmap pendiente arriba. Para retomar: mem_search "autotag" +
-leer este archivo + PENDIENTES_REVISION.md.
-L5 (2026-11-19): Pipeline autotag migrado de %TEMP%\opencode\autotag\ a src/rivalkit/detect/
-(analyze.py, classify_digits.py, strips.py, transcribe.py, merge_shotmap.py, matrix.py,
-analyze_goals.py) sin rutas hardcodeadas y con imports perezosos de cv2/faster_whisper;
-SPEC-detect.md creado; tests/test_detect.py agregado. Acentos corregidos en src/rivalkit/report.py
-(commit 89c48e8) y en data/real/almagro-f36-agropecuario/notes.toml (incluyendo "Julián Marchioni"
-para matchear lineup.csv); PDF Informe-Tecnico-Almagro-F36-Agropecuario.pdf regenerado. 76 tests verdes.
+L1 (2026-11-17): Kevin pidió "todo el proyecto dentro del marco SDD". Mapa de capacidades creado en `CAPABILITY-MAP.md`.
+L2 (2026-11-18): Partido f36 taggeado y validado por 5 fuentes (marcador, audio, tiras de 12 frames, Whisper y FotMob/Sofascore → 40 eventos).
+L3 (2026-11-18): Informe 9 páginas con branding Almagro (azul `#1B3C8C`/negro), portada con escudo Wikimedia, tablas estiladas `ax.table`.
+L4 (2026-11-19): Commits `b57c7f8` (tagger v2 + player passthrough) y `34d83ec` (branding + SDD artifacts) en `feat/almagro-report`.
+L5 (2026-11-19): Pipeline autotag migrado de `%TEMP%\opencode\autotag\` a `src/rivalkit/detect/` (commit `15e97e4`) con `SPEC-detect.md` y `tests/test_detect.py`; acentos corregidos en `report.py` (commit `89c48e8`) y `notes.toml`; 76 tests verdes.
+L6 (2026-11-19): Auditoría completa de la carpeta `fuchibol`. Hallazgos clave: (1) `README.md` referencia `docs/tagging-guide.md` y `docs/data-sources.md`, que faltan en `docs/` tras el incidente del 17/11 y aún dice "8 paginas / 66 tests"; (2) en `data/real/` quedaron 5 carpetas vacías (`gc-f32..gc-f36`) del intento descartado de Godoy Cruz por YouTube; (3) se unificó el marco de trabajo: SDD (`CAPABILITY-MAP.md` + `SPEC-*.md`) para contratos de módulos y ODD (`odd/tasks/autotag-pipeline.md`) como único logbook maestro ordenado en 4 fases (T1..T10).

@@ -13,11 +13,12 @@ Metodología: Spec-Driven Development (fases SPECIFY → PLAN → TASKS → IMPL
 | tracking | Posiciones de jugadores por frame (YOLO + homografía) → zonas medidas, fases de posesión, transiciones; modo local (clips) y modo Colab (partido completo) | schema |
 | report | Extensión del reporte actual: matrices de zonas, diagramas de gol, anexos (tracking + frames) | merge |
 
-Build order: schema (hecho) → detect (hecho) → review → merge → tracking → report (hecho)
+Build order: schema (hecho) → detect (hecho) → review → merge → tracking (hecho) → report (hecho)
 
 Estado SDD:
 - `SPEC-report.md` redactado e implementado (módulo `report`, branding y acentos incluidos).
-- `SPEC-detect.md` redactado e implementado (`src/rivalkit/detect/` con 7 submódulos y tests en `tests/test_detect.py`).
+- `SPEC-detect.md` redactado e implementado (`src/rivalkit/detect/` con 8 submódulos incluido el orquestador `pipeline.py` y tests en `tests/test_detect.py` + `tests/test_detect_pipeline.py`).
+- `SPEC-tracking.md` redactado e implementado (`src/rivalkit/tracking.py` y tests en `tests/test_tracking.py`).
 Los demás módulos se especifican conforme avanza el build order.
 
 Notas:

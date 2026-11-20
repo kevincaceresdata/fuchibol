@@ -1,22 +1,25 @@
 # Rivalkit
 
 Kit de reportes de rival ("rival reports") para clubes del fútbol argentino:
-convierte partidos etiquetados a mano desde video en un PDF de 8 paginas A4,
-listo para leer en minutos por un cuerpo tecnico.
+convierte partidos etiquetados desde video (a mano o con el pipeline asistido
+`rivalkit.detect` + `rivalkit.tracking`) en un PDF de 9 páginas A4 (portada +
+8 secciones), listo para leer en minutos por un cuerpo técnico.
 
-Sirve dos propositos a la vez:
+Sirve dos propósitos a la vez:
 
 1. **Pie de portfolio**: un pipeline Python chico, probado y legible
-   (validacion exhaustiva de CSV, agregacion, graficos, PDF, CLI, 66 tests).
+   (validación exhaustiva de CSV, detección asistida, tracking YOLO +
+   homografía, agregación, gráficos, PDF con identidad visual, CLI y tests).
 2. **Herramienta de outreach semanal**: un comando produce el informe del
-   proximo rival a partir de los CSV etiquetados.
+   próximo rival a partir de los CSV etiquetados.
 
-## Como funciona
+## Cómo funciona
 
 ```
-video (el analista etiqueta a mano) --> data/<match>/*.csv
+video.mp4 --> rivalkit.detect + rivalkit.tracking + tools/tagger.html
+   --> events_raw.json --> scripts/tagger_export.py --> data/<match>/*.csv
    --> rivalkit.schema (valida) --> rivalkit.charts (agrega y dibuja)
-   --> rivalkit.report (8 paginas A4) --> informe.pdf
+   --> rivalkit.report (9 páginas A4) --> informe.pdf
 ```
 
 Pipeline plano, un modulo por etapa, sin frameworks ni servicios. Los datos
@@ -39,17 +42,21 @@ Generar el informe de ejemplo (equipos ficticios, datos sinteticos):
 .venv\Scripts\python -m rivalkit data/example/m* --notes data/example/notes.toml -o rival-report.pdf
 ```
 
-El PDF tiene exactamente 8 paginas A4. Si falta algun dato obligatorio o un
-CSV tiene errores, el comando lista todos los errores y **no escribe** el PDF.
+El PDF tiene exactamente 9 páginas A4 (portada + 8 de contenido). Si la carpeta
+del partido incluye `assets/logo.png` (y opcionalmente `assets/opponent_logo.png`),
+el informe incorpora los escudos en la portada, banda superior y tarjeta del
+partido. Si falta algún dato obligatorio o un CSV tiene errores, el comando
+lista todos los errores y **no escribe** el PDF.
 
 ## Comandos
 
-| Comando | Que hace |
+| Comando | Qué hace |
 |---|---|
-| `python -m rivalkit <carpetas> --notes notas.toml -o salida.pdf` | Genera el informe |
-| `.venv\Scripts\python -m pytest` | Corre la suite completa (66 tests) |
-| `.venv\Scripts\python scripts/make_example_data.py` | Regenera el dataset de ejemplo de forma identica (semilla fija) |
-| `tools\tagger.html` + `scripts\tagger_export.py` | Etiquetado sobre video local: abri el HTML en el navegador, cargá el mp4, exportá `events_raw.json` y convertilo a `events.csv` con game_state calculado |
+| `python -m rivalkit <carpetas> --notes notas.toml -o salida.pdf` | Genera el informe PDF (9 páginas A4) |
+| `.venv\Scripts\python -m pytest -q` | Corre la suite completa de tests |
+| `.venv\Scripts\python -m rivalkit.detect.pipeline --workdir DIR` | Fusiona marcador (`flips.json`), audio (`peaks.json`), relato (`transcript.jsonl`), tracking (`pitch_positions.csv`) y `shotmap.json` en `events_raw.json` |
+| `.venv\Scripts\python scripts/make_example_data.py` | Regenera el dataset de ejemplo de forma idéntica (semilla fija) |
+| `tools\tagger.html` + `scripts\tagger_export.py` | Etiquetado y revisión por tiras sobre video local: exporta `events_raw.json` y convierte a `events.csv` con `game_state` calculado |
 
 Contrato de la CLI: exit 0 con el PDF escrito; exit 1 con todos los errores
 listados y el output intacto si la entrada es invalida; exit 2 por uso
