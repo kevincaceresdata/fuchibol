@@ -16,7 +16,7 @@ from typing import Sequence
 
 from .analyze_goals import W, H, zone_of
 from .merge_shotmap import merge_shots
-from .transcribe import match_keywords
+from .transcribe import RECOVERY_WORDS, match_keywords
 
 GOAL_SHOUT_WINDOW_S = 30.0      # gol/golazo within this of a flip is the goal itself
 STANDALONE_PEAK_PROMINENCE = 8.5
@@ -31,7 +31,11 @@ def minute_from_ts(ts: float, t_1t: float = 874.0, t_2t: float = 1962.0,
 
 
 def classify_commentary_type(text: str) -> tuple[str, str]:
-    """Map a commentary segment to (event_type, detail)."""
+    """Map a commentary segment to (event_type, detail).
+
+    Set pieces rank first, then explicit shot words, then recovery
+    vocabulary, and only then the generic shot fallback.
+    """
     low = text.lower()
     if "penal" in low:
         return "penalty", ""
@@ -43,6 +47,10 @@ def classify_commentary_type(text: str) -> tuple[str, str]:
         return "shot", "on_target"
     if "afuera" in low:
         return "shot", "off_target"
+    if "remate" in low or "cabeza" in low or "palos" in low:
+        return "shot", ""
+    if any(w in low for w in RECOVERY_WORDS):
+        return "recovery", ""
     return "shot", ""
 
 

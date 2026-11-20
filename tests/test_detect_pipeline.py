@@ -5,6 +5,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+
 from rivalkit.detect.pipeline import (
     classify_commentary_type,
     enrich_with_tracking,
@@ -13,6 +15,7 @@ from rivalkit.detect.pipeline import (
     minute_from_ts,
     run_pipeline,
 )
+from rivalkit.detect.transcribe import KEYWORDS, match_keywords
 
 
 def test_minute_from_ts_maps_video_time_to_match_minutes():
@@ -212,3 +215,45 @@ def test_cli_writes_events_raw_and_supports_rival_at_home(tmp_path: Path, capsys
     assert data["events"][0]["team"] == "opponent"
     assert data["events"][0]["zone"] == 2
     assert "custom.json" in capsys.readouterr().out
+
+
+# --- recovery detection (S8) ---------------------------------------------------
+
+@pytest.mark.parametrize("word", ["recupera", "recupero", "roba", "robo",
+                                  "quita", "corta", "intercep"])
+def test_recovery_words_are_in_the_transcriber_vocabulary(word):
+    assert word in KEYWORDS
+    assert match_keywords(f"El cinco {word} la pelota") == [word]
+
+
+def test_classify_commentary_type_detects_recovery():
+    assert classify_commentary_type("La recupera en el mediocampo") == ("recovery", "")
+    assert classify_commentary_type("Gran recuperación en la salida") == ("recovery", "")
+    assert classify_commentary_type("Le roba la pelota al enganche") == ("recovery", "")
+    assert classify_commentary_type("El robo fue limpio") == ("recovery", "")
+    assert classify_commentary_type("La quita en campo contrario") == ("recovery", "")
+    assert classify_commentary_type("Corta el avance rival") == ("recovery", "")
+    assert classify_commentary_type("Intercepta el pase largo") == ("recovery", "")
+
+
+def test_classify_commentary_type_ranks_set_pieces_and_shot_words_above_recovery():
+    # Set pieces still win over recovery vocabulary.
+    assert classify_commentary_type("Recupera en el área y hay penal") == ("penalty", "")
+    assert classify_commentary_type("La roba y gana el córner") == ("corner", "crossed")
+    assert classify_commentary_type("La quita y comete falta") == ("free_kick", "direct")
+    # Explicit shot words win over recovery vocabulary.
+    assert classify_commentary_type("La recupera y mete un remate cruzado") == ("shot", "")
+    assert classify_commentary_type("Cabeza tras recuperar el balón") == ("shot", "")
+    assert classify_commentary_type("Recupera y saca un zapatazo al arco") == ("shot", "on_target")
+    assert classify_commentary_type("La corta pero el remate se fue afuera") == ("shot", "off_target")
+    assert classify_commentary_type("Gran atajada tras la recuperación") == ("shot", "on_target")
+    # No set piece, no shot word, no recovery word: fallback stays a shot.
+    assert classify_commentary_type("Pelotazo al área") == ("shot", "")
+
+
+def test_fuse_candidates_turns_recovery_hits_into_recovery_events():
+    segments = [{"start": 2500.0, "end": 2504.0,
+                 "text": "¡La recupera Almagro en campo contrario y sale jugando!"}]
+    events = fuse_candidates([], [], segments)
+    assert events == [{"minute": 28, "ts": 2502.0, "type": "recovery", "team": "rival",
+                       "zone": 17, "detail": "", "player": ""}]

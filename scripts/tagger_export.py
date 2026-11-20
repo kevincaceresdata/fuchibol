@@ -1,104 +1,89 @@
 """Convert the tagger's events_raw.json into events.csv with computed game_state.
 
-The tagger records the match-clock minute, the video timestamp, the event
-type, the acting team and the zone. It does not ask for the game state:
-this script derives it by walking the events in minute order and keeping
-the running score, from the rival's perspective, before each event.
+Thin CLI facade over `rivalkit.merge`: validation and conversion live in the
+module, this script only parses arguments and writes outputs. The default
+positional usage is byte-identical to the original script:
 
-Usage:
     .venv\\Scripts\\python scripts\\tagger_export.py events_raw.json > events.csv
 
-Writes the CSV to stdout; validation problems go to stderr with exit 1.
+Optional outputs (stdout stays clean whenever one of them is used):
+
+    .venv\\Scripts\\python scripts\\tagger_export.py events_raw.json -o events.csv
+    .venv\\Scripts\\python scripts\\tagger_export.py events_raw.json --xml eventos.xml
+    .venv\\Scripts\\python scripts\\tagger_export.py events_raw.json --corrections autotag.json corrections.jsonl
+
+Writes the CSV to stdout in the default mode; validation problems go to
+stderr with exit 1, exactly as before.
 """
 
 from __future__ import annotations
 
+import argparse
 import csv
 import json
 import sys
 from pathlib import Path
 
-EVENT_TYPES = {"shot", "goal", "corner", "free_kick", "penalty", "recovery"}
-TEAMS = {"rival", "opponent"}
-DETAILS = {
-    "goal": {"open_play", "set_piece", "penalty", "own_goal"},
-    "shot": {"on_target", "off_target", "blocked"},
-    "corner": {"direct", "crossed", "short"},
-    "free_kick": {"direct", "crossed", "short"},
-}
+from rivalkit.merge import (
+    CSV_FIELDS,
+    DETAILS,
+    EVENT_TYPES,
+    TEAMS,
+    convert_events,
+    export_sportscode_xml,
+    write_corrections_log,
+)
+
+# Backward-compatible aliases: existing callers import the contract from here.
+convert = convert_events
 
 
-def convert(rows: list[dict]) -> list[dict]:
-    """Validate raw tagger rows and attach game_state, sorted by match time."""
-    errors: list[str] = []
-    clean: list[dict] = []
-    for i, ev in enumerate(rows, 1):
-        label = f"evento {i}"
-        try:
-            minute = int(ev["minute"])
-        except (KeyError, TypeError, ValueError):
-            errors.append(f"{label}: minute invalido {ev.get('minute')!r}")
-            continue
-        if not 0 <= minute <= 120:
-            errors.append(f"{label}: minute {minute} fuera de 0-120")
-        event_type = str(ev.get("type", ""))
-        if event_type not in EVENT_TYPES:
-            errors.append(f"{label}: type {event_type!r} no es uno de {sorted(EVENT_TYPES)}")
-        team = str(ev.get("team", ""))
-        if team not in TEAMS:
-            errors.append(f"{label}: team {team!r} no es rival/opponent")
-        try:
-            zone = int(ev["zone"])
-        except (KeyError, TypeError, ValueError):
-            errors.append(f"{label}: zone invalida {ev.get('zone')!r}")
-            continue
-        if not 1 <= zone <= 18:
-            errors.append(f"{label}: zone {zone} fuera de 1-18")
-        detail = str(ev.get("detail") or "")
-        allowed = DETAILS.get(event_type, set())
-        if detail and detail not in allowed:
-            errors.append(f"{label}: detail {detail!r} no permitido para {event_type}")
-        try:
-            ts = float(ev.get("ts", 0))
-        except (TypeError, ValueError):
-            ts = 0.0
-        if errors and errors[-1].startswith(label):
-            continue
-        clean.append({"minute": minute, "ts": ts, "type": event_type,
-                      "team": team, "zone": zone, "detail": detail,
-                      "player": str(ev.get("player") or "")})
-    if errors:
-        raise SystemExit("\n".join(errors))
+def _load_events(path: Path) -> list[dict]:
+    data = json.loads(Path(path).read_text(encoding="utf-8-sig"))
+    return data["events"]
 
-    clean.sort(key=lambda e: (e["minute"], e["ts"]))
-    rival_goals = opponent_goals = 0
-    out = []
-    for e in clean:
-        state = ("winning" if rival_goals > opponent_goals
-                 else "losing" if rival_goals < opponent_goals else "drawing")
-        out.append({"minute": e["minute"], "event_type": e["type"], "team": e["team"],
-                    "zone": e["zone"], "game_state": state, "player": e["player"],
-                    "detail": e["detail"]})
-        if e["type"] == "goal":
-            # team is the credited side (own goals included), per the tagging guide
-            if e["team"] == "rival":
-                rival_goals += 1
-            else:
-                opponent_goals += 1
-    return out
+
+def _write_csv(fh, rows: list[dict]) -> None:
+    writer = csv.DictWriter(fh, CSV_FIELDS, lineterminator="\n")
+    writer.writeheader()
+    writer.writerows(rows)
 
 
 def main(argv: list[str]) -> int:
-    if len(argv) != 2:
-        print("uso: python scripts/tagger_export.py events_raw.json > events.csv",
-              file=sys.stderr)
-        return 2
-    data = json.loads(Path(argv[1]).read_text(encoding="utf-8-sig"))
-    rows = convert(data["events"])
-    writer = csv.DictWriter(sys.stdout, ["minute", "event_type", "team", "zone",
-                                          "game_state", "player", "detail"], lineterminator="\n")
-    writer.writeheader()
-    writer.writerows(rows)
+    # argv[0] is the script name (as in sys.argv) unless it already looks
+    # like a flag, so both main(sys.argv) and main(["--xml", ...]) work.
+    tokens = argv[1:] if argv and not str(argv[0]).startswith("-") else list(argv)
+    parser = argparse.ArgumentParser(
+        prog="tagger_export.py",
+        description="Convert reviewed events_raw.json into events.csv, "
+                    "Nacsport/Sportscode XML and a corrections audit log.")
+    parser.add_argument("events_json",
+                        help="reviewed events_raw.json ({\"events\": [...]})")
+    parser.add_argument("-o", "--out", type=Path, default=None, metavar="FILE.csv",
+                        help="write the CSV to FILE.csv instead of stdout")
+    parser.add_argument("--xml", type=Path, default=None, metavar="FILE.xml",
+                        help="write a Sportscode/Nacsport/Once Sport XML file")
+    parser.add_argument("--corrections", nargs=2, type=Path, default=None,
+                        metavar=("BEFORE.json", "LOG.jsonl"),
+                        help="write a JSONL log of human changes vs the BEFORE.json autotag")
+    args = parser.parse_args(tokens)
+
+    raw = _load_events(args.events_json)
+    rows = convert_events(raw)
+
+    if args.out is not None:
+        with args.out.open("w", encoding="utf-8", newline="") as fh:
+            _write_csv(fh, rows)
+    elif args.xml is None and args.corrections is None:
+        _write_csv(sys.stdout, rows)
+
+    if args.xml is not None:
+        n = export_sportscode_xml(raw, args.xml)
+        print(f"{n} instances -> {args.xml}", file=sys.stderr)
+    if args.corrections is not None:
+        before_path, log_path = args.corrections
+        n = write_corrections_log(_load_events(before_path), raw, log_path)
+        print(f"{n} corrections -> {log_path}", file=sys.stderr)
     return 0
 
 

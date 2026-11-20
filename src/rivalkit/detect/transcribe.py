@@ -17,10 +17,17 @@ from typing import Sequence
 
 import numpy as np
 
+# Recovery vocabulary lives beside KEYWORDS so the transcriber's hit filter
+# and the pipeline's recovery classification share one source of truth.
+RECOVERY_WORDS: tuple[str, ...] = (
+    "recupera", "recupero", "roba", "robo", "quita", "corta", "intercep",
+)
+
 KEYWORDS: tuple[str, ...] = (
     "gol", "remate", "cabeza", "córner", "córcer", "corcer", "corner", "esquina",
     "tiro libre", "falta", "penal", "tarjeta", "amarilla", "roja",
     "ataj", "golazo", "palito", "palos", "afuera", "cruc",
+    *RECOVERY_WORDS,
 )
 
 
