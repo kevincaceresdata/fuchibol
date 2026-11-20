@@ -13,13 +13,14 @@ Metodología: Spec-Driven Development (fases SPECIFY → PLAN → TASKS → IMPL
 | tracking | Posiciones de jugadores por frame (YOLO + homografía) → zonas medidas, fases de posesión, transiciones; modo local (clips) y modo Colab (partido completo) | schema |
 | report | Extensión del reporte actual: matrices de zonas, diagramas de gol, anexos (tracking + frames) | merge |
 
-Build order: schema (hecho) → detect (hecho) → review → merge → tracking (hecho) → report (hecho)
+Build order: schema (hecho) → detect (hecho) → review (hecho) → merge (hecho) → tracking (hecho) → report (hecho)
 
 Estado SDD:
-- `SPEC-report.md` redactado e implementado (módulo `report`, branding y acentos incluidos).
-- `SPEC-detect.md` redactado e implementado (`src/rivalkit/detect/` con 8 submódulos incluido el orquestador `pipeline.py` y tests en `tests/test_detect.py` + `tests/test_detect_pipeline.py`).
+- `SPEC-report.md` redactado e implementado (módulo `report`, branding Tricolor, KPIs, cronología y acentos incluidos).
+- `SPEC-detect.md` redactado e implementado (`src/rivalkit/detect/` con 8 submódulos incluido el orquestador `pipeline.py` con detección de `recovery` y tests en `tests/test_detect.py` + `tests/test_detect_pipeline.py`).
 - `SPEC-tracking.md` redactado e implementado (`src/rivalkit/tracking.py` y tests en `tests/test_tracking.py`).
-Los demás módulos se especifican conforme avanza el build order.
+- `SPEC-review.md` redactado e implementado (`tools/tagger.html` v3 con carga de `lineup.csv`, edición in-place, cola de revisión de candidatos, atajos `n`/`p` y exportación directa a JSON/CSV/XML; 21 tests en `tests/test_tagger_html.py`).
+- `SPEC-merge.md` redactado e implementado (`src/rivalkit/merge.py` + `scripts/tagger_export.py` con filtrado de rechazados, `corrections.log` JSONL y exportación XML Nacsport/Once Sport; 28 tests en `tests/test_merge.py`).
 
 Notas:
 - Ningún dato real se commitea: data/real/ sigue gitignoreado; el código es genérico para cualquier partido.
