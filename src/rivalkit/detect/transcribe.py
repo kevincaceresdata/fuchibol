@@ -18,7 +18,7 @@ from typing import Sequence
 import numpy as np
 
 KEYWORDS: tuple[str, ...] = (
-    "gol", "remate", "cabeza", "córcer", "corcer", "corner", "esquina",
+    "gol", "remate", "cabeza", "córner", "córcer", "corcer", "corner", "esquina",
     "tiro libre", "falta", "penal", "tarjeta", "amarilla", "roja",
     "ataj", "golazo", "palito", "palos", "afuera", "cruc",
 )
